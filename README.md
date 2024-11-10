@@ -78,9 +78,13 @@ To get started using Nix, open a new shell or run `. /nix/var/nix/profiles/defau
 `sudo nixos-install --flake github:dfroberg/dotnix2#nixos`
 
 ### Darwin/Linux
+
 `sudo mv /etc/nix/nix.conf /etc/nix/nix.conf.before-nix-darwin`
+
 `sudo mv /etc/bashrc /etc/bashrc.before-nix-darwin`
+
 `sudo mv /etc/zshrc /etc/zshrc.before-nix-darwin`
+
 `nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake github:dfroberg/dotnix2`
 
 ## Update
@@ -99,6 +103,6 @@ You could use something like this to import my home-manager standalone.
 
 ```nix
 { config, pkgs, ... }: {
-  home-manager.users.evan = import ./home-manager/home.nix;
+  home-manager.users.dfroberg = import ./home-manager/home.nix;
 }
 ```

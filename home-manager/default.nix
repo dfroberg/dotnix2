@@ -23,6 +23,7 @@
       ollama
       ripgrep
       smartcat
+      gnupg
     ];
 
     # Home Manager is pretty good at managing dotfiles. The primary way to manage
