@@ -25,21 +25,21 @@ On WSL2: [WSL2 Nix](https://github.com/nix-community/NixOS-WSL?tab=readme-ov-fil
 
 ### NixOS (currently just WSL)
 
-`sudo nixos-install --flake github:evantravers/dotfiles#nixos`
+`sudo nixos-install --flake github:dfroberg/dotnix2#nixos`
 
 ### Darwin/Linux
 
-`nix run nix-darwin -- switch --flake github:evantravers/dotfiles`
+`nix run nix-darwin -- switch --flake github:dfroberg/dotnix2`
 
 ## Update
 
 ### NixOS
 
-`sudo nixos-rebuild switch --flake ~/src/github.com/evantravers/dotfiles`
+`sudo nixos-rebuild switch --flake ~/src/github.com/dfroberg/dotnix2`
 
 ### Darwin
 
-`darwin-rebuild switch --flake ~/src/github.com/evantravers/dotfiles`
+`darwin-rebuild switch --flake ~/src/github.com/dfroberg/dotnix2`
 
 ## Home Manager
 
