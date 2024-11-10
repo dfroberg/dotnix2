@@ -53,7 +53,7 @@
       };
     };
     darwinConfigurations = {
-      "G2157QVFX1" = darwinSystem {
+      "XM14644HYP" = darwinSystem {
         user = "dfroberg";
       };
       "Dannys-MacBook-Pro" = darwinSystem {
