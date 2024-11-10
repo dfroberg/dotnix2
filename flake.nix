@@ -37,7 +37,7 @@
   {
     nixosConfigurations = {
       nixos = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
+        system = "aarch64-darwin";
         modules = [
           nixos-wsl.nixosModules.wsl
           ./nixos/configuration.nix
