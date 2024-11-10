@@ -58,7 +58,7 @@
       };
       "Dannys-MacBook-Pro" = darwinSystem {
         user = "dfroberg";
-        arch = "x86_64-darwin";
+        arch = "aarch64-darwin";
       };
     };
   };
