@@ -34,8 +34,8 @@
       pkgs.curl # Command line tool for transferring data with URL syntax
       pkgs.jq # Command line JSON processor
       pkgs.yq # Command line YAML processor
-      pkgs.oh-my-zsh
-      pkgs.eza
+      pkgs.oh-my-zsh # Many things
+      pkgs.eza # ls replacement
     ];
 
   # Use a custom configuration.nix location.
@@ -142,6 +142,11 @@
     keyboard = {
       enableKeyMapping = true;
       remapCapsLockToControl = false;
+    };
+  };
+  security = {
+    pam = {
+      enableSudoTouchIdAuth = true; # enable sudo touch id auth
     };
   };
 }
