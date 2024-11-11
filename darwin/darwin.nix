@@ -1,22 +1,53 @@
 { pkgs, ... }:
 
 {
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      allowUnfreePredicate = (_: true);
+    };
+  };
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   environment.systemPackages =
     [
       pkgs.home-manager
+      pkgs.fzf # Fuzzy finder
+      pkgs.pet # Snippet manager
+      pkgs.lazydocker # Docker TUI
+      pkgs.lazygit # Git TUI
+      pkgs.ripgrep # Faster grep
+      pkgs.zoxide # Directory jump tool (z)
+      pkgs.k9s # Kubernetes CLI to manage your clusters in styles
+      pkgs.pandoc # Universal document converter
+      pkgs.rustc # Rust programming language
+      pkgs.rustup # Rust toolchain installer
+      pkgs.lorri # Nix shell manager
+      pkgs.htop # Interactive process viewer
+      pkgs.tree # Display directories as trees
+      pkgs.gh # GitHub CLI
+      pkgs.go # Go programming language
+      pkgs.kubectl # Kubernetes CLI
+      pkgs.kubectx # Kubernetes context switcher
+      pkgs.tenv # OpenTofu, Terraform, Terragrunt and Atmos version manager
+      pkgs.delta # Terminal git diff viewer with syntax highlighting
+      pkgs.curl # Command line tool for transferring data with URL syntax
+      pkgs.jq # Command line JSON processor
+      pkgs.yq # Command line YAML processor
+      pkgs.oh-my-zsh
+      pkgs.eza
     ];
 
   # Use a custom configuration.nix location.
   # $ darwin-rebuild switch -I darwin-config=$HOME/.config/nixpkgs/darwin/configuration.nix
-  environment.darwinConfig = "$HOME/src/github.com/evantravers/dotfiles/darwin";
-
+  environment.darwinConfig = "$HOME/dotnix/darwin";
+  
   # Auto upgrade nix package and the daemon service.
   nix = {
     package = pkgs.nix;
     settings = {
       "extra-experimental-features" = [ "nix-command" "flakes" ];
+      "extra-platforms" = [ "x86_64-darwin" "aarch64-darwin"];
     };
   };
 

@@ -9,6 +9,15 @@
     ./tmux.nix
     ./wezterm.nix
   ];
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      # allowUnfreePredicate = (_: true);
+      allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        "ec2-api-tools"
+      ];
+    };
+  };
 
   home = {
     stateVersion = "24.05"; # Please read the comment before changing.
@@ -24,8 +33,13 @@
       ripgrep
       smartcat
       gnupg
+      sops
+      age
+      bws
+      oh-my-zsh
+      fish
+      wakatime
     ];
-
     # Home Manager is pretty good at managing dotfiles. The primary way to manage
     # plain files is through 'home.file'.
     file = {
@@ -42,15 +56,31 @@
     };
 
     sessionVariables = {
+      EDITOR = "nvim";
     };
   };
 
   programs = {
-    fish = {
+    zsh = {
       enable = true;
-      interactiveShellInit = ''
-        set fish_greeting # N/A
-      '';
+      enableCompletion = false; # enabled in oh-my-zsh
+      shellAliases = {
+        asl = "aws sso login";
+        ls = "eza -l";
+        ll = "eza -la";
+        da = "direnv allow";
+        nu = "darwin-rebuild switch --flake ~/dotnix";
+      };
+      oh-my-zsh = {
+        enable = true;
+        theme = "terminalparty";
+        plugins = [
+	        "git"
+          "kubectl"
+          "helm"
+          "docker"
+        ];
+      };
     };
 
     direnv = {

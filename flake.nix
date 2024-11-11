@@ -15,13 +15,21 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
+    # sops-nix - secrets with `sops`
+    # https://github.com/Mic92/sops-nix
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = { nixpkgs, darwin, home-manager, nixos-wsl, ... } @ inputs: let
+    nixpkgs.config.allowUnfree = true;
     darwinSystem = {user, arch ? "aarch64-darwin"}:
       darwin.lib.darwinSystem {
         system = arch;
         modules = [
           ./darwin/darwin.nix
+          { nixpkgs.config.allowUnfree = true; }
           home-manager.darwinModules.home-manager
           {
             _module.args = { inherit inputs; };

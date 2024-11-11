@@ -15,7 +15,7 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
-
+  nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   programs.zsh.enable = true;
@@ -23,4 +23,7 @@
   users.defaultUserShell = pkgs.zsh;
 
   time.timeZone = "Europe/Stockholm";
+
+  security.pam.enableSudoTouchIdAuth = true; # enable sudo touch id auth
+  security.sudo.touchIdAuthTimeout = 10; # timeout in seconds
 }
