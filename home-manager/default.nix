@@ -39,7 +39,15 @@
       oh-my-zsh
       fish
       wakatime
+      thefuck
+      (pkgs.fetchFromGitHub {
+        owner = "wbingli";
+        repo = "zsh-wakatime";
+        rev = "master";
+        sha256 = "sha256-QN/MUDm+hVJUMA4PDqs0zn9XC2wQZrgQr4zmCF0Vruk=";
+      })
     ];
+      
     # Home Manager is pretty good at managing dotfiles. The primary way to manage
     # plain files is through 'home.file'.
     file = {
@@ -57,6 +65,7 @@
 
     sessionVariables = {
       EDITOR = "nvim";
+      ZSH_WAKATIME_PROJECT_DETECTION = "true"; # enable project detection
     };
   };
 
@@ -71,6 +80,18 @@
         da = "direnv allow";
         nu = "darwin-rebuild switch --flake ~/dotnix";
       };
+      plugins = [
+        {
+          # will source zsh-autosuggestions.plugin.zsh
+          name = "zsh-wakatime";
+          src = pkgs.fetchFromGitHub {
+            owner = "wbingli";
+            repo = "zsh-wakatime";
+            rev = "master";
+            sha256 = "sha256-QN/MUDm+hVJUMA4PDqs0zn9XC2wQZrgQr4zmCF0Vruk=";
+          };
+        }
+      ];
       oh-my-zsh = {
         enable = true;
         theme = "terminalparty";
@@ -79,6 +100,8 @@
           "kubectl"
           "helm"
           "docker"
+          "golang"
+          "thefuck"
         ];
       };
     };

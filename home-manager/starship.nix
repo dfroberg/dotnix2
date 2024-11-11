@@ -2,7 +2,8 @@
 {
   programs.starship = {
     enable = true;
-
+    enableZshIntegration = true;
+    
     settings = {
       command_timeout = 100;
       format = "[$all](dimmed white)";
