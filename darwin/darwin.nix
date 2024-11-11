@@ -116,6 +116,7 @@
 
     masApps = {
       # "Drafts" = 1435957248;
+      Tailscale = 1475387142; # App Store URL id
     };
   };
 

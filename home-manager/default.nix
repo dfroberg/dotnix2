@@ -70,9 +70,14 @@
   };
 
   programs = {
+    dircolors.enable = true;
+    fzf.enable = true;
+    starship.enable = true;
+    zoxide.enable = true;
     zsh = {
       enable = true;
       enableCompletion = false; # enabled in oh-my-zsh
+      
       shellAliases = {
         asl = "aws sso login";
         ls = "eza -l";
