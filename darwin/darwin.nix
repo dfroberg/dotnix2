@@ -37,6 +37,12 @@
       pkgs.yq # Command line YAML processor
       pkgs.oh-my-zsh # Many things
       pkgs.eza # ls replacement
+      pkgs.terminal-notifier  # macOS notification system
+      pkgs.xclip # Command line clipboard manager
+      pkgs.xsel # Command line clipboard manager
+      pkgs.slack # Slack client
+      pkgs.zoom-us # Zoom client
+
     ];
 
   # Use a custom configuration.nix location.
@@ -139,6 +145,11 @@
         AppleKeyboardUIMode = 3;
         "com.apple.keyboard.fnState" = true;
         NSAutomaticWindowAnimationsEnabled = false;
+      };
+      trackpad = {
+        Clicking = true;
+        TrackpadRightClick = true;
+        TrackpadThreeFingerDrag = true;
       };
     };
     keyboard = {
