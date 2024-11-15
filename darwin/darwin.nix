@@ -92,7 +92,7 @@
       '';
     };
     jankyborders = {
-      enable = true;
+      enable = false;
       blur_radius = 5.0;
       hidpi = true;
       active_color = "0xAAB279A7";
