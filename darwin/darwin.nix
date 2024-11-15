@@ -126,6 +126,11 @@
   };
 
   system = {
+    activationScripts.enableSudoTouchIdAuth = ''
+      if ! grep -q "pam_tid.so" /etc/pam.d/sudo; then
+        echo "auth       sufficient     pam_tid.so" | sudo tee -a /etc/pam.d/sudo
+      fi
+    '';
     defaults = {
       dock = {
         autohide = true;
@@ -161,4 +166,5 @@
       enableSudoTouchIdAuth = true; # enable sudo touch id auth
     };
   };
+  
 }
