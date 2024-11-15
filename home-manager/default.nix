@@ -40,6 +40,7 @@
       fish
       wakatime
       thefuck
+      uv
       (pkgs.fetchFromGitHub {
         owner = "wbingli";
         repo = "zsh-wakatime";
