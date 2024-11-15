@@ -42,7 +42,6 @@
       pkgs.xsel # Command line clipboard manager
       pkgs.slack # Slack client
       pkgs.zoom-us # Zoom client
-
     ];
 
   # Use a custom configuration.nix location.

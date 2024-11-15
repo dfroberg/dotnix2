@@ -2,6 +2,10 @@
   description = "Danny's Nix System Configuration";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -22,7 +26,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-  outputs = { nixpkgs, darwin, home-manager, nixos-wsl, ... } @ inputs: let
+  outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, ... } @ inputs: let
     nixpkgs.config.allowUnfree = true;
     darwinSystem = {user, arch ? "aarch64-darwin"}:
       darwin.lib.darwinSystem {
@@ -30,6 +34,7 @@
         modules = [
           ./darwin/darwin.nix
           { nixpkgs.config.allowUnfree = true; }
+          agenix.darwinModules.default
           home-manager.darwinModules.home-manager
           {
             _module.args = { inherit inputs; };
@@ -50,6 +55,8 @@
           nixos-wsl.nixosModules.wsl
           ./nixos/configuration.nix
           ./.config/wsl
+          agenix.packages.default
+          # sops-nix.packages.${system}.default
           home-manager.nixosModules.home-manager
           {
             home-manager = {
