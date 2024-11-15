@@ -15,6 +15,7 @@
       # allowUnfreePredicate = (_: true);
       allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
         "ec2-api-tools"
+        "bws"
       ];
     };
   };
