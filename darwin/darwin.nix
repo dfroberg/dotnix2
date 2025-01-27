@@ -81,18 +81,23 @@
         mouse_modifier = "ctrl";
         mouse_drop_action = "stack";
         window_shadow = "float";
-        window_gap = "20";
+        window_gap = "10";
       };
       extraConfig = ''
-        yabai -m signal --add event=display_added action="yabai -m rule --remove label=calendar && yabai -m rule --add app='Fantastical' label='calendar' display=east" active=yes
+        yabai -m space 1 --label code
+        yabai -m space 2 --label docs
+        yabai -m space 3 --label chat
+        yabai -m signal --add event=display_added action="yabai -m rule --remove label=calendar && yabai -m rule --add app='Fantastical' label='calendar' display=south" active=yes
         yabai -m signal --add event=display_removed action="yabai -m rule --remove label=calendar && yabai -m rule --add app='Fantastical' label='calendar' native-fullscreen=on" active=yes
-        yabai -m rule --add app='OBS' display=east
-        yabai -m rule --add app='Spotify' display=east
-
+        yabai -m rule --add app='OBS' display=south --space=chat
+        yabai -m rule --add app='Spotify' display=north --space=chat
+        yabai -m rule --add app='Cursor' display=north --space=code
+        yabai -m rule --add app='Warp' display=south --space=code
+        yabai -m rule --add app='Joplin' display=south --space=docs
       '';
     };
     jankyborders = {
-      enable = false;
+      enable = true;
       blur_radius = 5.0;
       hidpi = true;
       active_color = "0xAAB279A7";
@@ -103,13 +108,25 @@
   homebrew = {
     enable = true;
 
+    brews = [
+      "awscli"
+      "aws-vault"
+      "yarn"
+      "npm"
+      "pre-commit"
+      "terragrunt"
+      "tfenv"
+      "tflint"
+      "nushell"
+    ];
+
     casks = [
       "1password"
       "bartender"
-      "brave-browser"
       "fantastical"
       "firefox"
       "hammerspoon"
+      "joplin"
       "karabiner-elements"
       "keycastr"
       "obsidian"
@@ -117,6 +134,7 @@
       "soundsource"
       "wezterm"
       "visual-studio-code"
+      "warp"
     ];
 
     masApps = {
@@ -126,11 +144,6 @@
   };
 
   system = {
-    activationScripts.enableSudoTouchIdAuth = ''
-      if ! grep -q "pam_tid.so" /etc/pam.d/sudo; then
-        echo "auth       sufficient     pam_tid.so" | sudo tee -a /etc/pam.d/sudo
-      fi
-    '';
     defaults = {
       dock = {
         autohide = true;
@@ -160,10 +173,21 @@
       enableKeyMapping = true;
       remapCapsLockToControl = false;
     };
+    activationScripts = {
+      postActivation.text = ''
+        # Load PAM module for sudo Touch ID authentication
+        # Remove any existing Touch ID configuration
+        sudo sed -i "" "/pam_tid.so/d" /etc/pam.d/sudo
+        # Insert Touch ID authentication at the beginning of the auth section
+        sudo sed -i "" '1a\
+auth       sufficient     pam_tid.so
+' /etc/pam.d/sudo
+      '';
+    };
   };
   security = {
     pam = {
-      enableSudoTouchIdAuth = true; # enable sudo touch id auth
+      enableSudoTouchIdAuth = true;
     };
   };
   
