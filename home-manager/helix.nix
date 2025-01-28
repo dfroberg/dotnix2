@@ -39,6 +39,9 @@
         };
         true-color = true;
         whitespace.render = "all";
+        wakatime = {
+          enable = true;
+        };
       };
       keys = {
         normal = {

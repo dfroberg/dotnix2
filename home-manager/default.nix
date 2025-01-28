@@ -42,12 +42,14 @@
       wakatime
       thefuck
       uv
+      wakatime-cli
       (pkgs.fetchFromGitHub {
         owner = "wbingli";
         repo = "zsh-wakatime";
         rev = "master";
         sha256 = "sha256-QN/MUDm+hVJUMA4PDqs0zn9XC2wQZrgQr4zmCF0Vruk=";
       })
+      jq
     ];
     activation.decryptSecrets = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Decrypting secrets..."
@@ -80,6 +82,7 @@
       EDITOR = "nvim";
       SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
       ZSH_WAKATIME_PROJECT_DETECTION = "true"; # enable project detection
+      WAKATIME_HOME = "${config.home.homeDirectory}/.wakatime";
     };
   };
 
@@ -101,7 +104,6 @@
       };
       plugins = [
         {
-          # will source zsh-autosuggestions.plugin.zsh
           name = "zsh-wakatime";
           src = pkgs.fetchFromGitHub {
             owner = "wbingli";
@@ -131,5 +133,11 @@
     };
 
     jujutsu.enable = true;
+
+    vscode = {
+      extensions = with pkgs.vscode-extensions; [
+        wakatime.vscode-wakatime
+      ];
+    };
   };
 }

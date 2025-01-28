@@ -292,6 +292,7 @@
         type = "lua";
         config = lib.fileContents ./lsp.lua;
       }
+      vim-wakatime
     ];
   };
 }
