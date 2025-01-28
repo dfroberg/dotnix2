@@ -1,0 +1,9 @@
+---
+description: This is specifically for giving context about DotyNIX
+globs: 
+---
+
+# Project dot files and configurations
+
+- we use darwin nix on a macbook pro m1
+- [README.md](mdc:README.md) contains the particulars.
