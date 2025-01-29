@@ -50,6 +50,12 @@
         sha256 = "sha256-QN/MUDm+hVJUMA4PDqs0zn9XC2wQZrgQr4zmCF0Vruk=";
       })
       jq
+      (nerdfonts.override { 
+        fonts = [
+          "JetBrainsMono"
+        ];
+        enableWindowsFonts = true;
+      })
     ];
     activation.decryptSecrets = lib.hm.dag.entryAfter ["writeBoundary"] ''
       echo "Decrypting secrets..."

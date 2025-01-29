@@ -67,9 +67,13 @@
   # $ darwin-rebuild changelog
   system.stateVersion = 4;
 
-  fonts.packages = [
-    pkgs.atkinson-hyperlegible
-    pkgs.jetbrains-mono
+  fonts.packages = with pkgs; [
+    (nerdfonts.override {
+      fonts = [
+        "JetBrainsMono"
+      ];
+    })
+    atkinson-hyperlegible
   ];
 
   services = {
