@@ -519,8 +519,8 @@ local function buildWindowQuery(app_config)
     end
 end
 
--- Function to move and resize a window using yabai
-local function moveAndResizeWindow(app_config, x, y, w, h)
+-- Function to move and resize a window using yabai with Hammerspoon fallback
+local function moveAndResizeWindow(app_config, x, y, w, h, display_num)
     -- Try to launch the app if it's not running
     local app = hs.application.find(app_config.app)
     if not app then
@@ -528,164 +528,169 @@ local function moveAndResizeWindow(app_config, x, y, w, h)
         app = hs.application.open(app_config.app)
         -- Wait for app to launch and create its window
         if app then
-            local max_attempts = 20  -- Increase max attempts
+            local max_attempts = 20
             local attempts = 0
             while attempts < max_attempts do
                 local win = app:mainWindow()
-                if win then
-                    -- Move to second display immediately after window creation
-                    local screen = hs.screen.allScreens()[2]
-                    if screen then
-                        win:moveToScreen(screen)
-                        break
-                    end
-                end
+                if win then break end
                 hs.timer.usleep(500000)  -- Wait 0.5 seconds
                 attempts = attempts + 1
             end
-            -- Give the window a bit more time to settle
             hs.timer.usleep(1000000)  -- Wait 1 second
         end
     end
-    
-    -- Try to get the window again after launch/wait
-    if app then
-        local win = app:mainWindow()
-        if win then
-            local screen = hs.screen.allScreens()[2]
-            if screen then
-                win:moveToScreen(screen)
-            end
-        end
-    end
-    
+
     local query_cmd = buildWindowQuery(app_config)
     local window_id = hs.execute(query_cmd):gsub("%s+", "")
     print("Window ID:", window_id)
     
-    -- Try to get the window using Hammerspoon
-    local win = window_id and hs.window.get(tonumber(window_id))
-    if not win and app then
-        win = app:mainWindow()
+    -- Try yabai first
+    if window_id and window_id ~= "" then
+        -- First move to target display
+        print("Moving to display:", display_num)
+        yabaiSync({"window", window_id, "--display", tostring(display_num)})
+        -- Wait for the display move to complete
+        hs.timer.usleep(200000)  -- 200ms
+
+        -- Get display dimensions for the target display
+        local status, display_output = yabaiSync({"query", "--displays"})
+        local display_info = hs.json.decode(display_output)
+        local target_display = nil
+        
+        for _, display in ipairs(display_info) do
+            if display.index == display_num then
+                target_display = display
+                break
+            end
+        end
+        
+        if target_display then
+            local frame = target_display.frame
+            local abs_x = math.floor(frame.x + (frame.w * x))
+            local abs_y = math.floor(frame.y + (frame.h * y))
+            local abs_w = math.floor(frame.w * w)
+            local abs_h = math.floor(frame.h * h)
+            
+            -- Ensure window is floating
+            local status, window_info = yabaiSync({"query", "--windows", "--window", window_id})
+            if status then
+                local info = hs.json.decode(window_info)
+                if not info["is-floating"] then
+                    yabaiSync({"window", window_id, "--toggle", "float"})
+                end
+            end
+            
+            -- Move and resize
+            yabaiSync({"window", window_id, "--move", string.format("abs:%d:%d", abs_x, abs_y)})
+            hs.timer.usleep(50000)
+            yabaiSync({"window", window_id, "--resize", string.format("abs:%d:%d", abs_w, abs_h)})
+            yabaiSync({"window", window_id, "--focus"})
+            return
+        end
     end
     
+    -- Fallback to Hammerspoon if yabai fails
+    print("Falling back to Hammerspoon for window management")
+    local win = app and app:mainWindow()
     if win then
-        -- Get the second screen
-        local screen = hs.screen.allScreens()[2]
-        if screen then
-            -- Move window to screen first
-            win:moveToScreen(screen)
-            -- Get screen frame
-            local frame = screen:frame()
-            -- Calculate new frame
+        local screens = hs.screen.allScreens()
+        local target_screen = screens[display_num]
+        if target_screen then
+            win:moveToScreen(target_screen)
+            local frame = target_screen:frame()
             local newFrame = {
                 x = frame.x + (frame.w * x),
                 y = frame.y + (frame.h * y),
                 w = frame.w * w,
                 h = frame.h * h
             }
-            -- Set window frame
             win:setFrame(newFrame)
-            -- Focus window
             win:focus()
-            return
-        end
-    end
-    
-    -- If Hammerspoon approach failed, try yabai
-    if window_id and window_id ~= "" then
-        -- Check if window is already floating
-        local status, window_info = yabaiSync({"query", "--windows", "--window", window_id})
-        local is_floating = "false"
-        if status then
-            local info = hs.json.decode(window_info)
-            is_floating = info["is-floating"] and "true" or "false"
-        end
-        print("Is floating:", is_floating)
-        
-        -- Float the window if it's not already floating
-        if is_floating ~= "true" then
-            yabai({"-m", "window", window_id, "--toggle", "float"})
-        end
-        
-        -- Get display dimensions
-        local status, display_output = yabaiSync({"query", "--displays"})
-        print("Display output:", display_output)
-        local display_info = hs.json.decode(display_output)
-        
-        if display_info and #display_info >= 2 then
-            -- Get the second display's frame
-            local frame = display_info[2].frame
-            print("Frame:", hs.inspect(frame))
-            -- Use the actual coordinates from yabai
-            local abs_x = math.floor(frame.x + (frame.w * x))
-            local abs_y = math.floor(frame.y + (frame.h * y))
-            local abs_w = math.floor(frame.w * w)
-            local abs_h = math.floor(frame.h * h)
-            
-            print(string.format("Moving window to: x=%d, y=%d, w=%d, h=%d", abs_x, abs_y, abs_w, abs_h))
-            -- Move to display first
-            yabaiSync({"window", window_id, "--display", "2"})
-            hs.timer.usleep(100000)
-            -- Set frame using absolute coordinates
-            yabaiSync({"window", window_id, "--move", string.format("abs:%d:%d", abs_x, abs_y)})
-            hs.timer.usleep(50000)
-            yabaiSync({"window", window_id, "--resize", string.format("abs:%d:%d", abs_w, abs_h)})
-        else
-            print("Display info:", hs.inspect(display_info))
-            print("Error: Second display not found or invalid display info")
         end
     end
 end
 
 -- Define standard position like top-right, top-left, bottom-right, bottom-left
 local standardPositions = {
-  center = {x = 0.2, y = 0, w = 0.6, h = 1},
-  center_left = {x = 0.2, y = 0, w = 0.3, h = 1},
-  center_right = {x = 0.5, y = 0, w = 0.3, h = 1},
-  top_right = {x = 0.8, y = 0, w = 0.2, h = 0.495},
-  top_left = {x = 0, y = 0, w = 0.2, h = 0.495},
-  bottom_right = {x = 0.8, y = 0.5, w = 0.2, h = 0.495},
-  bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.495}
+  -- External display (display 2) positions
+  center = {x = 0.2, y = 0, w = 0.6, h = 1, display = 2},
+  center_left = {x = 0.2, y = 0, w = 0.3, h = 1, display = 2},
+  center_right = {x = 0.5, y = 0, w = 0.3, h = 1, display = 2},
+  top_right = {x = 0.8, y = 0, w = 0.2, h = 0.495, display = 2},
+  top_left = {x = 0, y = 0, w = 0.2, h = 0.495, display = 2},
+  bottom_right = {x = 0.8, y = 0.5, w = 0.2, h = 0.495, display = 2},
+  bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.495, display = 2},
+  
+  -- Built-in display (display 1) positions
+  main_center = {x = 0, y = 0, w = 1, h = 1, display = 1},
+  main_left = {x = 0, y = 0, w = 0.5, h = 1, display = 1},
+  main_right = {x = 0.5, y = 0, w = 0.5, h = 1, display = 1}
 }
 
 -- Define position transitions for arrow keys
 local positionTransitions = {
   left = {
+    -- External display transitions
     center = "center_left",
     center_right = "center",
-    center_left = "top_left",      -- Center to corner
-    top_right = "center_right",    -- Corner to center
-    bottom_right = "center_right", -- Corner to center
-    top_left = "top_right",        -- Stay at edge
-    bottom_left = "bottom_right"   -- Stay at edge
+    center_left = "top_left",
+    top_right = "center_right",
+    bottom_right = "center_right",
+    top_left = "top_right",
+    bottom_left = "bottom_right",
+    
+    -- Built-in display transitions
+    main_center = "main_left",
+    main_right = "main_center",
+    main_left = "main_right"
   },
   right = {
+    -- External display transitions
     center_left = "center",
     center = "center_right",
-    center_right = "top_right",    -- Center to corner
-    top_left = "center_left",      -- Corner to center
-    bottom_left = "center_left",   -- Corner to center
-    top_right = "top_left",      -- Stay at edge
-    bottom_right = "bottom_left" -- Stay at edge
+    center_right = "top_right",
+    top_left = "center_left",
+    bottom_left = "center_left",
+    top_right = "top_left",
+    bottom_right = "bottom_left",
+    
+    -- Built-in display transitions
+    main_left = "main_center",
+    main_center = "main_right",
+    main_right = "main_left"
   },
   up = {
-    center = "top_left",           -- Center to corner
-    center_left = "top_left",
-    center_right = "top_right",
-    bottom_left = "top_left",      -- Direct corner to corner
-    bottom_right = "top_right",    -- Direct corner to corner
-    top_left = "top_left",        -- Stay at edge
-    top_right = "top_right"       -- Stay at edge
+    -- External display transitions
+    center = "center",
+    center_left = "center_left",
+    center_right = "center_right",
+    bottom_left = "top_left",
+    bottom_right = "top_right",
+    top_left = "top_left",
+    top_right = "top_right",
+    
+    -- Cross-display transitions
+    main_center = "center",
+    main_left = "center_left",
+    main_right = "center_right"
   },
   down = {
-    center = "bottom_left",        -- Center to corner
-    center_left = "bottom_left",
-    center_right = "bottom_right",
-    top_left = "bottom_left",      -- Direct corner to corner
-    top_right = "bottom_right",    -- Direct corner to corner
-    bottom_left = "bottom_left",  -- Stay at edge
-    bottom_right = "bottom_right" -- Stay at edge
+    -- External display transitions
+    center = "bottom_left",
+    center_left = "main_left",
+    center_right = "main_right",
+    top_left = "bottom_left",
+    top_right = "bottom_right",
+    bottom_left = "bottom_left",
+    bottom_right = "bottom_right",
+    
+    -- Cross-display transitions
+    center = "main_center",
+    center_left = "main_left",
+    center_right = "main_right",
+    main_center = "main_center",
+    main_left = "main_left",
+    main_right = "main_right"
   }
 }
 
@@ -695,22 +700,47 @@ local function getCurrentPosition(win)
   local screen = win:screen()
   local screenFrame = screen:frame()
   
+  -- Determine screen index by comparing with all screens
+  local screenIndex = 1  -- Default to main display
+  local allScreens = hs.screen.allScreens()
+  for i, s in ipairs(allScreens) do
+    if screen:id() == s:id() then
+      screenIndex = i
+      break
+    end
+  end
+  
   -- Convert absolute coordinates to relative
   local relX = (frame.x - screenFrame.x) / screenFrame.w
   local relY = (frame.y - screenFrame.y) / screenFrame.h
   local relW = frame.w / screenFrame.w
   local relH = frame.h / screenFrame.h
   
+  -- Add debug output
+  print(string.format("Window position - x: %.3f, y: %.3f, w: %.3f, h: %.3f, screen: %d", 
+    relX, relY, relW, relH, screenIndex))
+  
   -- Find matching standard position
   for pos_name, pos in pairs(standardPositions) do
-    if math.abs(pos.x - relX) < 0.1 and
-        math.abs(pos.y - relY) < 0.1 and
-        math.abs(pos.w - relW) < 0.1 and
-        math.abs(pos.h - relH) < 0.1 then
-       return pos_name
+    -- Check if position matches current display
+    if pos.display == screenIndex then
+      -- Use smaller tolerance for position matching
+      if math.abs(pos.x - relX) < 0.05 and
+          math.abs(pos.y - relY) < 0.05 and
+          math.abs(pos.w - relW) < 0.05 and
+          math.abs(pos.h - relH) < 0.05 then
+        print("Matched position:", pos_name)
+        return pos_name
+      end
     end
   end
-  return "center"  -- Default if no match found
+  
+  -- If no match found, return default based on current display
+  if screenIndex == 1 then
+    return "main_center"
+  else
+    return "center"
+  end
 end
 
 -- Function to move window in specified direction
@@ -721,12 +751,17 @@ local function moveWindowInDirection(direction)
     local nextPos = positionTransitions[direction] and positionTransitions[direction][currentPos]
     
     if nextPos then
-      local app_config = {
-        app = win:application():name(),
-        title = win:title()
-      }
       local pos = standardPositions[nextPos]
-      moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h)
+      if pos then
+        print(string.format("Moving from %s to %s on display %d", 
+          currentPos, nextPos, pos.display))
+        
+        local app_config = {
+          app = win:application():name(),
+          title = win:title()
+        }
+        moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h, pos.display)
+      end
     end
   end
 end
