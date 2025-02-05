@@ -42,6 +42,67 @@
       pkgs.xsel # Command line clipboard manager
       pkgs.slack # Slack client
       pkgs.zoom-us # Zoom client
+      (pkgs.writeScriptBin "list-hotkeys" ''
+        #!${pkgs.stdenv.shell}
+        echo "=== SKHD Hotkeys ==="
+        grep -v '^#' /etc/skhdrc | grep -v '^$' | sed 's/^/skhd: /'
+        
+        echo -e "\n=== System Keyboard Shortcuts ==="
+        defaults read com.apple.symbolichotkeys | grep -A2 "enabled = 1" | grep -B2 "value ="
+        
+        echo -e "\n=== Yabai Hotkeys ==="
+        grep -v '^#' /etc/yabairc | grep 'skhd' | sed 's/^/yabai: /'
+      '')
+      (pkgs.writeScriptBin "clone-repos" ''
+        #!${pkgs.stdenv.shell}
+        ORG=$1 # Your organization in lowercase
+        CLONE_PATH="/$HOME/''${ORG}" # Path in your filesystem where you want to clone the repos to
+        DEFAULT_SUBSET=""
+        SUBSET=''${2:-$DEFAULT_SUBSET} # Only clone repos that contain this string in their name
+
+        # Check if gh is installed
+        if ! command -v gh &> /dev/null
+        then
+            echo "gh could not be found"
+            exit
+        fi
+
+        # Check if jq is installed
+        if ! command -v jq &> /dev/null
+        then
+            echo "jq could not be found"
+            exit
+        fi
+
+        # Check if ORG is set
+        if [[ -z "''${ORG}" ]]; then
+          echo "Help: clone-repos.sh <ORG> [<SUBSET>,<SUBSET>,<SUBSET>,...]"
+          exit
+        fi
+        echo "Cloning repos from ''${ORG} to ''${CLONE_PATH} that contain \"''${SUBSET}\" in their name"
+        # loop over comma separated list of strings in SUBSET variable and echo the subset
+        for subset in $(echo ''${SUBSET} | tr "," "\n"); do
+          echo "Searching for \"''${subset}\""
+          REPOS=$(gh repo list INFURA --limit 9999 --no-archived --json sshUrl --jq ".[] | select(.sshUrl | contains(\"''${subset}\")) | .sshUrl")
+          for REPO_URL in ''${REPOS}; do
+            echo Getting ''${REPO_URL}
+            temp=''${REPO_URL##*/}
+            repo_name=''${temp%.*}
+            gh repo clone "''${REPO_URL}" "''${CLONE_PATH}/''${repo_name}" -- -q 2>/dev/null || (
+                cd "''${CLONE_PATH}/''${repo_name}"
+                # Handle case where local checkout is on a non-main/master branch
+                # - ignore checkout errors because some repos may have zero commits, 
+                # so no main or master
+                echo -n "  pulling "
+                git config pull.rebase true
+                git checkout -q main 2>/dev/null || true
+                git checkout -q master 2>/dev/null || true
+                git fetch -f --tags -q && git pull -q
+            )
+          done;
+        done;
+      '')
+      pkgs.keycastr  # Visual keyboard viewer
     ];
 
   # Use a custom configuration.nix location.
@@ -80,119 +141,107 @@
     nix-daemon.enable = true;
     yabai = {
       enable = true;
-      config = {
-        layout = "bsp";
-        mouse_modifier = "ctrl";
-        mouse_drop_action = "stack";
-        window_shadow = "float";
-        window_gap = "10";
-        focus_follows_mouse = "autofocus";
-        mouse_follows_focus = "off";
-      };
+      package = pkgs.yabai;
       extraConfig = ''
-        # Name displays using display ID (more stable than index)
-        yabai -m display 1 --name north  # Built-in/Main display
-        yabai -m display 3 --name south  # External display
+        # Wait for yabai to be fully started
+        sleep 5
 
+        # Configure spaces
+        echo "Setting up spaces..."
+        
+        # Function to ensure we have exactly 6 spaces
+        setup_spaces() {
+          # Get displays
+          local displays=$(yabai -m query --displays)
+          local main_display=$(echo "$displays" | jq -r '.[] | select(.index == 1) | .uuid')
+          local second_display=$(echo "$displays" | jq -r '.[] | select(.index == 2) | .uuid')
+          
+          if [ -n "$main_display" ]; then
+            # Get spaces on main display
+            local main_spaces=$(yabai -m query --spaces | jq -r ".[] | select(.display == \"$main_display\") | .index")
+            local main_count=$(echo "$main_spaces" | wc -l)
+            
+            # Ensure exactly 1 space on main display
+            while [ "$main_count" -lt 1 ]; do
+              yabai -m space --create
+              main_count=$((main_count + 1))
+              sleep 0.5
+            done
+          fi
+          
+          if [ -n "$second_display" ]; then
+            # Get spaces on second display
+            local second_spaces=$(yabai -m query --spaces | jq -r ".[] | select(.display == \"$second_display\") | .index")
+            local second_count=$(echo "$second_spaces" | wc -l)
+            
+            # Ensure exactly 4 spaces on second display
+            while [ "$second_count" -lt 4 ]; do
+              yabai -m space --create
+              second_count=$((second_count + 1))
+              sleep 0.5
+            done
+          fi
+          
+          # Get final space list for labeling
+          spaces=$(yabai -m query --spaces | jq -r '.[].index')
+          
+          # Label spaces based on display
+          i=1
+          for space in $spaces; do
+            # Get display for this space
+            local space_display=$(yabai -m query --spaces --space $space | jq -r '.display')
+            
+            if [ "$space_display" = "$main_display" ]; then
+              # Label main display space
+              yabai -m space $space --label main
+            elif [ "$space_display" = "$second_display" ]; then
+              # Label second display spaces
+              case $i in
+                1) yabai -m space $space --label code ;;
+                2) yabai -m space $space --label docs ;;
+                3) yabai -m space $space --label chat ;;
+                4) yabai -m space $space --label social ;;
+              esac
+            fi
+            i=$((i + 1))
+          done
+        }
+        
         # Set up spaces
-        yabai -m space 1 --label code
-        yabai -m space 2 --label docs
-        yabai -m space 3 --label chat
-        yabai -m space 5 --label external
-
+        setup_spaces
+        
+        # Wait for spaces to settle
+        sleep 2
+        
         # Basic window settings
         yabai -m config layout bsp
         yabai -m config window_placement second_child
-        yabai -m config split_ratio 0.75
+        yabai -m config split_ratio 0.50
         yabai -m config auto_balance off
         yabai -m config window_origin_display default
 
-        # Rules for external display apps
-        yabai -m rule --add app="^Cursor$" space=external manage=on
-        yabai -m rule --add app="^Google Chrome$" space=external manage=on
-        yabai -m rule --add app="^Warp$" space=external manage=on sub-layer=below sticky=off layer=normal
+        # Window opacity settings
+        yabai -m config active_window_opacity 1.0
+        yabai -m config normal_window_opacity 0.9
 
-        # Layout setup for external display
-        yabai -m signal --add event=window_created action='
-          if yabai -m query --displays | jq ". | length > 1"; then
-            window_id=$YABAI_WINDOW_ID
-            app_name=$(yabai -m query --windows --window "$window_id" | jq -r ".app")
-            space_index=$(yabai -m query --spaces --window "$window_id" | jq ".[0].index")
-            
-            case "$app_name" in
-              "Cursor")
-                yabai -m window "$window_id" --move abs:864:-1415
-                yabai -m window "$window_id" --resize abs:2555:1415
-                ;;
-              "Warp")
-                yabai -m window "$window_id" --move abs:2535:-1415
-                yabai -m window "$window_id" --resize abs:883:720
-                ;;
-              "Google Chrome")
-                # First, check if Warp exists in the same space
-                warp_id=$(yabai -m query --windows --space "$space_index" | jq -r '.[] | select(.app=="Warp") | .id')
-                if [ ! -z "$warp_id" ]; then
-                  # If Warp exists, stack Chrome on top of it
-                  yabai -m window "$window_id" --stack "$warp_id"
-                  yabai -m window "$window_id" --move abs:2535:-685
-                  yabai -m window "$window_id" --resize abs:883:684
-                else
-                  # If Warp doesn't exist, just position Chrome
-                  yabai -m window "$window_id" --move abs:2535:-685
-                  yabai -m window "$window_id" --resize abs:883:684
-                fi
-                ;;
-            esac
-          fi
-        '
+        # Padding
+        yabai -m config top_padding    5
+        yabai -m config bottom_padding 5
+        yabai -m config left_padding   5
+        yabai -m config right_padding  5
 
-        # Add a signal for when windows are destroyed to maintain stack
-        yabai -m signal --add event=window_destroyed action='
-          space_index=$(yabai -m query --spaces --space | jq ".[0].index")
-          chrome_windows=$(yabai -m query --windows --space "$space_index" | jq -r '.[] | select(.app=="Google Chrome") | .id')
-          warp_id=$(yabai -m query --windows --space "$space_index" | jq -r '.[] | select(.app=="Warp") | .id')
-          
-          if [ ! -z "$warp_id" ] && [ ! -z "$chrome_windows" ]; then
-            echo "$chrome_windows" | while read -r chrome_id; do
-              yabai -m window "$chrome_id" --stack "$warp_id"
-            done
-          fi
-        '
+        # Name displays using display ID (more stable than index)
+        yabai -m display 1 --label main # Built-in/Main display
+        yabai -m display 2 --label top  # External display
 
-        # Add a signal for when displays are added
-        yabai -m signal --add event=display_added action='
-          if yabai -m query --displays | jq ". | length > 1"; then
-            space_index=5  # external space
-            
-            # Move and resize Cursor
-            cursor_id=$(yabai -m query --windows --space "$space_index" | jq -r '.[] | select(.app=="Cursor") | .id')
-            if [ ! -z "$cursor_id" ]; then
-              yabai -m window "$cursor_id" --move abs:864:-1415
-              yabai -m window "$cursor_id" --resize abs:2555:1415
-            fi
-            
-            # Move and resize Warp
-            warp_id=$(yabai -m query --windows --space "$space_index" | jq -r '.[] | select(.app=="Warp") | .id')
-            if [ ! -z "$warp_id" ]; then
-              yabai -m window "$warp_id" --move abs:2535:-1415
-              yabai -m window "$warp_id" --resize abs:883:720
-            fi
-            
-            # Move and resize Chrome windows and stack them
-            if [ ! -z "$warp_id" ]; then
-              yabai -m query --windows --space "$space_index" | jq -r '.[] | select(.app=="Google Chrome") | .id' | while read chrome_id; do
-                yabai -m window "$chrome_id" --move abs:2535:-685
-                yabai -m window "$chrome_id" --resize abs:883:684
-                yabai -m window "$chrome_id" --stack "$warp_id"
-              done
-            fi
-          fi
-        '
+        # sub-layer normal
+        yabai -m rule --add app=".*" sub-layer=normal
 
         # South display rules
-        yabai -m rule --add app="^OBS$" display=south space=chat
         yabai -m rule --add app="^Spotify$" display=south space=chat
         yabai -m rule --add app="^Joplin$" display=south space=docs
+        yabai -m rule --add app="^Obsidian$" display=south space=docs
+        yabai -m rule --add app="^Raycast$" display=south space=other
 
         # Set default split type
         yabai -m config split_type auto
@@ -208,13 +257,132 @@
         yabai -m rule --add app="^Path Finder$" manage=off
         yabai -m rule --add app="^1Password$" manage=off
         yabai -m rule --add app="^Raycast$" manage=off
+        yabai -m rule --add app="^zoom.us$" manage=off
+        yabai -m rule --add app="^Bitwarden$" manage=off
+        yabai -m rule --add app="^OBSBOT_Main$" manage=off
+        yabai -m rule --add app="^Finder$" manage=off
+        yabai -m rule --add app="^Joplin$" manage=off
+        yabai -m rule --add app="^YouTube$" manage=off
+        yabai -m rule --add app="^Signal$" manage=off
+        yabai -m rule --add app="^Google Meet$" manage=off
+        yabai -m rule --add app="^Slack$" manage=off
+        
+        # Event handlers
+        yabai -m signal --add event=window_created action="yabai -m query --windows --window &> /dev/null || reposition_windows"
+        yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
+        yabai -m signal --add event=window_moved action="reposition_windows"
+        yabai -m signal --add event=window_resized action="reposition_windows"
+        yabai -m signal --add event=space_changed action="reposition_windows"
+        yabai -m signal --add event=display_changed action="reposition_windows"
+        yabai -m signal --add event=display_added action="reposition_windows"
+        yabai -m signal --add event=display_removed action="reposition_windows"
+        yabai -m signal --add event=window_focused action="reposition_windows"
+        yabai -m signal --add event=window_destroyed action="reposition_windows"
 
-        # Padding
-        yabai -m config top_padding    10
-        yabai -m config bottom_padding 10
-        yabai -m config left_padding   10
-        yabai -m config right_padding  10
+        # Mission control events
+        yabai -m signal --add event=mission_control_exit action='
+          yabai -m config active_window_opacity 1.0
+          reposition_windows
+        '
+        yabai -m signal --add event=mission_control_enter action='
+          yabai -m config normal_window_opacity 1.0
+          reposition_windows
+        '
+
+        # Combined rules for fixed size windows and window management
+        yabai -m rule --add app="^Signal$" manage=off space=2 sticky=off opacity=1.0
+        yabai -m rule --add app="^Google Meet$" manage=off space=2 sticky=off opacity=1.0
+        yabai -m rule --add app="^zoom.us$" manage=off space=2 sticky=off opacity=1.0
+        yabai -m rule --add app="^Slack$" manage=off space=2 sticky=off opacity=1.0
+        yabai -m rule --add app="^Warp$" manage=off space=2 sticky=off opacity=0.8
+        yabai -m rule --add app="^Cursor$" manage=off space=2 sticky=off opacity=1.0
+        yabai -m rule --add app="^YouTube$" manage=off space=2 sticky=off opacity=1.0
+
+        function reposition_windows() {
+            # First ensure all windows are on the right display and space
+            windows=$(yabai -m query --windows)
+            
+            # Get window IDs regardless of current space/display
+            signal_id=$(echo "$windows" | jq '.[] | select(.app=="Signal") | .id')
+            warp_id=$(echo "$windows" | jq '.[] | select(.app=="Warp") | .id')
+            cursor_id=$(echo "$windows" | jq '.[] | select(.app=="Cursor") | .id')
+            youtube_id=$(echo "$windows" | jq '.[] | select(.app=="YouTube") | .id')
+
+            if [ -n "$signal_id" ] && [ -n "$warp_id" ] && [ -n "$cursor_id" ] && [ -n "$youtube_id" ]; then
+                echo "Found all windows, preparing to move..."
+                
+                # First ensure all windows are unmanaged
+                for id in $signal_id $warp_id $cursor_id $youtube_id; do
+                    # Check if window is managed
+                    is_managed=$(yabai -m query --windows --window $id | jq '."is-floating" | not')
+                    if [ "$is_managed" = "true" ]; then
+                        yabai -m window $id --toggle float
+                    fi
+                done
+
+                # Then move windows to correct display/space
+                for id in $signal_id $warp_id $cursor_id $youtube_id; do
+                    # First move to display 2
+                    current_display=$(yabai -m query --windows --window $id | jq '.display')
+                    if [ "$current_display" != "2" ]; then
+                        yabai -m window $id --display 2
+                    fi
+                    # Then move to space 4
+                    current_space=$(yabai -m query --windows --window $id | jq '.space')
+                    if [ "$current_space" != "4" ]; then
+                        yabai -m window $id --space 4
+                    fi
+                done
+
+                # Wait a moment for windows to settle
+                sleep 0.5
+                
+                # Get display dimensions for positioning
+                display_info=$(yabai -m query --displays | jq '.[] | select(.index == 2)')
+                display_width=$(echo "$display_info" | jq '.frame.w | floor')
+                display_height=$(echo "$display_info" | jq '.frame.h | floor')
+                display_x=$(echo "$display_info" | jq '.frame.x | floor')
+                display_y=$(echo "$display_info" | jq '.frame.y | floor')
+                
+                # Calculate window positions and sizes
+                left_width=$(( display_width / 5 ))
+                middle_width=$(( display_width * 3 / 5 ))
+                right_width=$(( display_width / 5 ))
+                half_height=$(( display_height / 2 ))
+                
+                # Position Signal at top-left
+                yabai -m window $signal_id --move abs:$((display_x)):$((display_y))
+                yabai -m window $signal_id --resize abs:$left_width:$half_height
+
+                # Position Warp below Signal
+                yabai -m window $warp_id --move abs:$((display_x)):$((display_y + half_height))
+                yabai -m window $warp_id --resize abs:$left_width:$half_height
+
+                # Position Cursor in middle (larger space)
+                yabai -m window $cursor_id --move abs:$((display_x + left_width)):$((display_y))
+                yabai -m window $cursor_id --resize abs:$middle_width:$display_height
+
+                # Position YouTube on right
+                right_x=$((display_x + left_width + middle_width))
+                yabai -m window $youtube_id --move abs:$right_x:$((display_y))
+                yabai -m window $youtube_id --resize abs:$right_width:$display_height
+
+                echo "Windows positioned successfully"
+            else
+                echo "Not all required windows found"
+            fi
+        }
+        reposition_windows
       '';
+      config = {
+        layout = "bsp";
+        mouse_modifier = "ctrl";
+        mouse_drop_action = "stack";
+        window_shadow = "float";
+        window_gap = "10";
+        focus_follows_mouse = "autofocus";
+        mouse_follows_focus = "off";
+      };
     };
     jankyborders = {
       enable = true;
@@ -224,85 +392,12 @@
       inactive_color = "0x33867A74";
     };
     skhd = {
-      enable = true;
+      enable = false;
+      package = pkgs.skhd;
       skhdConfig = ''
-        # float / unfloat window
-        shift + alt - space : yabai -m window --toggle float; yabai -m window --grid 4:4:1:1:2:2
-
-        # toggle sticky, topmost, pip
-        shift + alt - s : yabai -m window --toggle sticky
-        shift + alt - t : yabai -m window --toggle topmost
-        shift + alt - p : yabai -m window --toggle pip
-
-        # Space navigation
-        alt - 1 : yabai -m space --focus 1
-        alt - 2 : yabai -m space --focus 2
-        alt - 3 : yabai -m space --focus 3
-        alt - 4 : yabai -m space --focus 4
-        alt - 5 : yabai -m space --focus 5
-
-        # Move window to space and follow focus
-        shift + alt - 1 : yabai -m window --space 1; yabai -m space --focus 1
-        shift + alt - 2 : yabai -m window --space 2; yabai -m space --focus 2
-        shift + alt - 3 : yabai -m window --space 3; yabai -m space --focus 3
-        shift + alt - 4 : yabai -m window --space 4; yabai -m space --focus 4
-        shift + alt - 5 : yabai -m window --space 5; yabai -m space --focus 5
-
-        # Create and destroy spaces
-        shift + cmd - n : yabai -m space --create
-        shift + cmd - d : yabai -m space --destroy
-
-        # Fast focus desktop
-        cmd + alt - x : yabai -m space --focus recent
-        cmd + alt - z : yabai -m space --focus prev || skhd -k "ctrl + alt + cmd - z"
-        cmd + alt - c : yabai -m space --focus next || skhd -k "ctrl + alt + cmd - c"
-        cmd + alt - 1 : yabai -m space --focus  1 || skhd -k "ctrl + alt + cmd - 1"
-        cmd + alt - 2 : yabai -m space --focus  2 || skhd -k "ctrl + alt + cmd - 2"
-        cmd + alt - 3 : yabai -m space --focus  3 || skhd -k "ctrl + alt + cmd - 3"
-        cmd + alt - 4 : yabai -m space --focus  4 || skhd -k "ctrl + alt + cmd - 4"
-        cmd + alt - 5 : yabai -m space --focus  5 || skhd -k "ctrl + alt + cmd - 5"
-
-        # Focus display
-        alt - tab : yabai -m display --focus recent
-
-        # Window movement
-        shift + alt - h : yabai -m window --warp west
-        shift + alt - j : yabai -m window --warp south
-        shift + alt - k : yabai -m window --warp north
-        shift + alt - l : yabai -m window --warp east
-
-        # Window resize
-        shift + cmd - h : yabai -m window --resize left:-50:0; yabai -m window --resize right:-50:0
-        shift + cmd - j : yabai -m window --resize bottom:0:50; yabai -m window --resize top:0:50
-        shift + cmd - k : yabai -m window --resize top:0:-50; yabai -m window --resize bottom:0:-50
-        shift + cmd - l : yabai -m window --resize right:50:0; yabai -m window --resize left:50:0
-
-        # Balance size of windows
-        shift + alt - 0 : yabai -m space --balance
-
-        # Rotate windows clockwise and anticlockwise
-        alt - r         : yabai -m space --rotate 90
-        shift + alt - r : yabai -m space --rotate 270
-
-        # Flip along y-axis
-        shift + alt - y : yabai -m space --mirror y-axis
-
-        # Flip along x-axis
-        shift + alt - x : yabai -m space --mirror x-axis
-
-        # Mouse support
-        # Left click + cmd - drag to move window
-        cmd + ctrl - m : yabai -m config mouse_modifier cmd
-        # Left click + alt - drag to resize window
-        cmd + ctrl - r : yabai -m config mouse_modifier alt
-        # Restore default
-        cmd + ctrl - 0 : yabai -m config mouse_modifier ctrl
-
-        # Focus window
-        alt - h : yabai -m window --focus west
-        alt - j : yabai -m window --focus south
-        alt - k : yabai -m window --focus north
-        alt - l : yabai -m window --focus east
+        #!/bin/sh
+        
+        # Window management hotkeys can go here
       '';
     };
   };
@@ -389,54 +484,40 @@
       CustomUserPreferences = {
         "com.apple.TCC" = {
           "kTCCServiceAccessibility" = {
+            "org.hammerspoon.Hammerspoon" = {
+              allowed = 1;
+              prompt-count = 1;
+            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
             };
           };
           "kTCCServiceSystemPolicyAllFiles" = {
+            "org.hammerspoon.Hammerspoon" = {
+              allowed = 1;
+              prompt-count = 1;
+            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
             };
           };
           "kTCCServiceAppleEvents" = {
+            "org.hammerspoon.Hammerspoon" = {
+              allowed = 1;
+              prompt-count = 1;
+            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
             };
           };
           "kTCCServiceScreenCapture" = {
-            "com.warp.Warp" = {
+            "org.hammerspoon.Hammerspoon" = {
               allowed = 1;
               prompt-count = 1;
             };
-          };
-          "kTCCServiceListenEvent" = {
-            "com.warp.Warp" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
-          };
-          "kTCCServicePostEvent" = {
-            "com.warp.Warp" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
-          };
-          "kTCCServiceDeveloperTool" = {
-            "com.warp.Warp" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
-          };
-          "kTCCServiceSystemPolicyAdminFiles" = {
-            "com.warp.Warp" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
-          };
-          "kTCCServiceSystemPolicySysAdminFiles" = {
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
@@ -457,17 +538,69 @@
 auth       sufficient     pam_tid.so
 ' /etc/pam.d/sudo
 
+        # Configure Karabiner-Elements
+        echo "Configuring Karabiner-Elements..."
+        mkdir -p ~/.config/karabiner/assets/complex_modifications/
+        cat > ~/.config/karabiner/assets/complex_modifications/1_hyper.json << 'EOF'
+{
+    "description": "Section (§) to Hyper Key",
+    "manipulators": [
+        {
+            "from": {
+                "key_code": "non_us_backslash",
+                "modifiers": { "optional": ["any"] }
+            },
+            "to": [{ "key_code": "f19" }],
+            "to_if_alone": [{ "key_code": "escape" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "f19",
+                "modifiers": { "optional": ["any"] }
+            },
+            "to": [
+                {
+                    "key_code": "left_shift",
+                    "modifiers": ["left_command", "left_control", "left_option"]
+                }
+            ],
+            "type": "basic"
+        }
+    ]
+}
+EOF
         # Add Warp to admin group
         echo "Adding Warp to admin group..."
         sudo security authorizationdb write system.privilege.admin allow
         sudo security authorizationdb write system.preferences allow
         sudo security authorizationdb write com.apple.system-extensions.admin allow
-      '';
+
+        # Disable automatic space rearrangement
+        /usr/bin/defaults write com.apple.dock "mru-spaces" -bool false
+        # Disable space auto-rearrange based on most recent use
+        /usr/bin/defaults write com.apple.dock "mru-spaces" -bool false
+        # Disable automatic space switching
+        /usr/bin/defaults write com.apple.dock "workspaces-auto-swoosh" -bool false
+        
+        # Restart Dock to apply changes
+        killall Dock
+        
+        # Wait for Dock to restart
+        sleep 5
+
+
+        '';
     };
   };
   security = {
     pam = {
       enableSudoTouchIdAuth = true;
+    };
+    sudo = {
+      extraConfig = ''
+        %admin ALL=(root) NOPASSWD: /run/current-system/sw/bin/yabai --load-sa
+      '';
     };
   };
   

@@ -50,7 +50,7 @@
         sha256 = "sha256-QN/MUDm+hVJUMA4PDqs0zn9XC2wQZrgQr4zmCF0Vruk=";
       })
       jq
-      (nerdfonts.override { 
+      (nerdfonts.override {
         fonts = [
           "JetBrainsMono"
         ];
@@ -75,13 +75,12 @@
         source = ./../.config/hammerspoon;
         target = ".hammerspoon";
         recursive = true;
+        onChange = ''
+          if command -v hs >/dev/null 2>&1; then
+            /usr/bin/env hs -c "hs.reload()"
+          fi
+        '';
       };
-      kanata = lib.mkIf pkgs.stdenvNoCC.isDarwin {
-        source = ./../.config/kanata;
-        target = "./config/kanata";
-        recursive = true;
-      };
-
     };
 
     sessionVariables = {
@@ -106,7 +105,10 @@
         ls = "eza -l";
         ll = "eza -la";
         da = "direnv allow";
-        nu = "darwin-rebuild switch --flake ~/dotnix";
+        nud = "darwin-rebuild switch --flake ~/dotnix";
+        showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
+        showspaces = "yabai -m query --spaces | jq -r '.[].label'";
+        showdisplays = "yabai -m query --displays | jq -r '.[].name'";
       };
       plugins = [
         {
