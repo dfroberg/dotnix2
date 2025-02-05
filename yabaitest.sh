@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-          # Basic window settings
+function setup_yabai() {
+         # Basic window settings
         yabai -m config layout bsp
         yabai -m config window_placement second_child
         yabai -m config split_ratio 0.50
@@ -81,7 +82,7 @@
         yabai -m rule --add app="^Warp$" manage=off space=4 sticky=off opacity=1.0
         yabai -m rule --add app="^Cursor$" manage=off space=4 sticky=off opacity=1.0
         yabai -m rule --add app="^YouTube$" manage=off space=4 sticky=off opacity=1.0
-
+}
         function reposition_windows() {
             # First ensure all windows are on the right display and space
             windows=$(yabai -m query --windows)
@@ -339,8 +340,8 @@
         }
 
         # Add this near the end of the file, after the existing function calls
-        echo "Running the reposition_windows function"
-        reposition_windows
+        #echo "Running the reposition_windows function"
+        #reposition_windows
         #echo "Running the draw_window_positions function"
         #draw_window_positions
         #yabai -m config split_type horizontal  # Reset split type first
