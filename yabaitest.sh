@@ -52,10 +52,12 @@ function setup_yabai() {
         yabai -m rule --add app="^Path Finder$" manage=off
         yabai -m rule --add app="^1Password$" manage=off
         yabai -m rule --add app="^Raycast$" manage=off
-        yabai -m rule --add app="^zoom.us$" manage=off
-        yabai -m rule --add app="^Bitwarden$" manage=off
-        yabai -m rule --add app="^OBSBOT_Main$" manage=off
-        yabai -m rule --add app="^Finder$" manage=off
+        yabai -m rule --add app="^zoom.us$" title="^Zoom Meeting$" manage=off
+        yabai -m rule --add app="^zoom.us$" title="^$" manage=off  # Control window
+        yabai -m rule --add app="^Zoom$" manage=off
+        yabai -m rule --add app="^us.zoom.xos$" manage=off
+        yabai -m rule --add title="^Zoom Meeting$" manage=off
+        yabai -m rule --add title="^Zoom$" manage=off
 
         # Event handlers
         yabai -m signal --add event=window_created action="yabai -m query --windows --window &> /dev/null || reposition_windows"

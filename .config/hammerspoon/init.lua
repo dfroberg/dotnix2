@@ -492,17 +492,36 @@ hs.audiodevice.watcher.start()
 hs.application.enableSpotlightForNameSearches(true)
 
 local function focusWindowByApp(app_name)
-  local cmd = string.format("/run/current-system/sw/bin/yabai -m query --windows | jq '.[] | select(.app==\"%s\") | .id'", app_name)
-  local window_id = hs.execute(cmd):gsub("%s+", "")
-  print(string.format("%s window ID for focus:", app_name), window_id)
-  if window_id and window_id ~= "" then
-      yabai({"-m", "window", window_id, "--focus"})
-  end
+    -- For Zoom, specifically target the main window
+    if app_name == "zoom.us" then
+        local cmd = "/run/current-system/sw/bin/yabai -m query --windows | " ..
+                   "jq '.[] | select(.app==\"zoom.us\" and .title==\"Zoom Meeting\") | .id'"
+        local window_id = hs.execute(cmd):gsub("%s+", "")
+        print(string.format("%s window ID for focus:", app_name), window_id)
+        if window_id and window_id ~= "" then
+            yabaiSync({"window", window_id, "--focus"})
+        end
+        return
+    end
+
+    -- For other apps
+    local cmd = string.format("/run/current-system/sw/bin/yabai -m query --windows | " ..
+                            "jq '.[] | select(.app==\"%s\" and .title != \"\") | .id'", app_name)
+    local window_id = hs.execute(cmd):gsub("%s+", "")
+    print(string.format("%s window ID for focus:", app_name), window_id)
+    if window_id and window_id ~= "" then
+        yabaiSync({"window", window_id, "--focus"})
+    end
 end
 
 -- Function to build window query for an app
 local function buildWindowQuery(app_config)
-    if app_config.title then
+    local app_name = app_config.app
+    -- Handle Zoom's special case
+    if app_name == "zoom.us" then
+        return "/run/current-system/sw/bin/yabai -m query --windows | " ..
+               "jq '.[] | select(.app==\"zoom.us\" and .title==\"Zoom Meeting\") | .id'"
+    elseif app_config.title then
         -- Special case for Chrome windows with specific titles
         return string.format(
             "/run/current-system/sw/bin/yabai -m query --windows | " ..
@@ -510,17 +529,24 @@ local function buildWindowQuery(app_config)
             app_config.app, app_config.title
         )
     else
-        -- Normal case - match by app name only
+        -- Normal case - match by app name or bundle ID
+        local app = hs.application.find(app_config.app)
+        local bundleID = app and app:bundleID() or ""
         return string.format(
             "/run/current-system/sw/bin/yabai -m query --windows | " ..
-            "jq '.[] | select(.app==\"%s\") | .id'",
-            app_config.app
+            "jq '.[] | select(.app==\"%s\" or .\"bundle-identifier\"==\"%s\") | " ..
+            "select(.title != \"\") | .id'",  -- Exclude empty titles
+            app_config.app, bundleID
         )
     end
 end
 
 -- Function to move and resize a window using yabai with Hammerspoon fallback
 local function moveAndResizeWindow(app_config, x, y, w, h, display_num)
+    -- Ensure we have a valid display number
+    display_num = display_num or 2  -- Default to external display if not specified
+    print(string.format("Moving window for app '%s' to display %d", app_config.app, display_num))
+
     -- Try to launch the app if it's not running
     local app = hs.application.find(app_config.app)
     if not app then
@@ -540,73 +566,80 @@ local function moveAndResizeWindow(app_config, x, y, w, h, display_num)
         end
     end
 
+    -- Print app info if found
+    if app then
+        print(string.format("Found app: name='%s', bundleID='%s'", app:name(), app:bundleID()))
+    end
+
     local query_cmd = buildWindowQuery(app_config)
+    print("Query command:", query_cmd)
     local window_id = hs.execute(query_cmd):gsub("%s+", "")
     print("Window ID:", window_id)
     
     -- Try yabai first
     if window_id and window_id ~= "" then
-        -- First move to target display
-        print("Moving to display:", display_num)
-        yabaiSync({"window", window_id, "--display", tostring(display_num)})
-        -- Wait for the display move to complete
-        hs.timer.usleep(200000)  -- 200ms
-
-        -- Get display dimensions for the target display
-        local status, display_output = yabaiSync({"query", "--displays"})
-        local display_info = hs.json.decode(display_output)
-        local target_display = nil
-        
-        for _, display in ipairs(display_info) do
-            if display.index == display_num then
-                target_display = display
-                break
+        -- First ensure window is floating
+        local status, window_info = yabaiSync({"query", "--windows", "--window", window_id})
+        if status then
+            local info = hs.json.decode(window_info)
+            if not info["is-floating"] then
+                yabaiSync({"window", window_id, "--toggle", "float"})
+                hs.timer.usleep(100000)  -- Wait for float toggle
             end
         end
-        
-        if target_display then
-            local frame = target_display.frame
-            local abs_x = math.floor(frame.x + (frame.w * x))
-            local abs_y = math.floor(frame.y + (frame.h * y))
-            local abs_w = math.floor(frame.w * w)
-            local abs_h = math.floor(frame.h * h)
+
+        -- Then move to target display
+        print("Moving to display:", display_num)
+        local move_cmd = string.format("/run/current-system/sw/bin/yabai -m window %s --display %d", window_id, display_num)
+        print("Move command:", move_cmd)
+        local status = os.execute(move_cmd)
+        if status then
+            print("Successfully moved window to display", display_num)
             
-            -- Ensure window is floating
+            -- Get the window's new frame on the target display
             local status, window_info = yabaiSync({"query", "--windows", "--window", window_id})
             if status then
                 local info = hs.json.decode(window_info)
-                if not info["is-floating"] then
-                    yabaiSync({"window", window_id, "--toggle", "float"})
+                local display = info.display
+                print(string.format("Window is now on display %d", display))
+                
+                -- Get display dimensions
+                local status, display_output = yabaiSync({"query", "--displays"})
+                if status then
+                    local displays = hs.json.decode(display_output)
+                    local target_display = nil
+                    for _, d in ipairs(displays) do
+                        if d.index == display_num then
+                            target_display = d
+                            break
+                        end
+                    end
+                    
+                    if target_display then
+                        -- Calculate absolute positions based on display frame
+                        local frame = target_display.frame
+                        local abs_x = math.floor(frame.x + (frame.w * x))
+                        local abs_y = math.floor(frame.y + (frame.h * y))
+                        local abs_w = math.floor(frame.w * w)
+                        local abs_h = math.floor(frame.h * h)
+                        
+                        print(string.format("Resizing window to: x=%d, y=%d, w=%d, h=%d", 
+                            abs_x, abs_y, abs_w, abs_h))
+                        
+                        -- Move and resize
+                        yabaiSync({"window", window_id, "--move", string.format("abs:%d:%d", abs_x, abs_y)})
+                        hs.timer.usleep(50000)
+                        yabaiSync({"window", window_id, "--resize", string.format("abs:%d:%d", abs_w, abs_h)})
+                        yabaiSync({"window", window_id, "--focus"})
+                    end
                 end
             end
-            
-            -- Move and resize
-            yabaiSync({"window", window_id, "--move", string.format("abs:%d:%d", abs_x, abs_y)})
-            hs.timer.usleep(50000)
-            yabaiSync({"window", window_id, "--resize", string.format("abs:%d:%d", abs_w, abs_h)})
-            yabaiSync({"window", window_id, "--focus"})
-            return
+        else
+            print("Failed to move window to display", display_num)
         end
-    end
-    
-    -- Fallback to Hammerspoon if yabai fails
-    print("Falling back to Hammerspoon for window management")
-    local win = app and app:mainWindow()
-    if win then
-        local screens = hs.screen.allScreens()
-        local target_screen = screens[display_num]
-        if target_screen then
-            win:moveToScreen(target_screen)
-            local frame = target_screen:frame()
-            local newFrame = {
-                x = frame.x + (frame.w * x),
-                y = frame.y + (frame.h * y),
-                w = frame.w * w,
-                h = frame.h * h
-            }
-            win:setFrame(newFrame)
-            win:focus()
-        end
+        
+        -- Wait for the display move to complete
+        hs.timer.usleep(200000)  -- 200ms
     end
 end
 
@@ -633,61 +666,58 @@ local positionTransitions = {
     -- External display transitions
     center = "center_left",
     center_right = "center",
-    center_left = "top_left",
-    top_right = "center_right",
-    bottom_right = "center_right",
-    top_left = "top_right",
-    bottom_left = "bottom_right",
+    center_left = "top_left",      -- Center to corner
+    top_right = "center_right",    -- Corner to center
+    bottom_right = "center_right", -- Corner to center
+    top_left = "top_left",        -- Stay at edge
+    bottom_left = "bottom_left",   -- Stay at edge
     
     -- Built-in display transitions
     main_center = "main_left",
     main_right = "main_center",
-    main_left = "main_right"
+    main_left = "main_left"       -- Stay at edge
   },
   right = {
     -- External display transitions
     center_left = "center",
     center = "center_right",
-    center_right = "top_right",
-    top_left = "center_left",
-    bottom_left = "center_left",
-    top_right = "top_left",
-    bottom_right = "bottom_left",
+    center_right = "top_right",    -- Center to corner
+    top_left = "center_left",      -- Corner to center
+    bottom_left = "center_left",   -- Corner to center
+    top_right = "top_right",      -- Stay at edge
+    bottom_right = "bottom_right", -- Stay at edge
     
     -- Built-in display transitions
     main_left = "main_center",
     main_center = "main_right",
-    main_right = "main_left"
+    main_right = "main_right"     -- Stay at edge
   },
   up = {
     -- External display transitions
-    center = "center",
-    center_left = "center_left",
-    center_right = "center_right",
-    bottom_left = "top_left",
-    bottom_right = "top_right",
-    top_left = "top_left",
-    top_right = "top_right",
+    center = "top_left",          -- Center to corner
+    center_left = "top_left",
+    center_right = "top_right",
+    bottom_left = "top_left",     -- Direct corner to corner
+    bottom_right = "top_right",   -- Direct corner to corner
+    top_left = "top_left",       -- Stay at edge
+    top_right = "top_right",     -- Stay at edge
     
-    -- Cross-display transitions
-    main_center = "center",
-    main_left = "center_left",
-    main_right = "center_right"
+    -- Cross-display transitions from built-in to external
+    main_center = "center",       -- Center to center
+    main_left = "center_left",    -- Left to left
+    main_right = "center_right"   -- Right to right
   },
   down = {
     -- External display transitions
-    center = "bottom_left",
-    center_left = "main_left",
-    center_right = "main_right",
-    top_left = "bottom_left",
-    top_right = "bottom_right",
-    bottom_left = "bottom_left",
-    bottom_right = "bottom_right",
+    center = "main_center",       -- Center to center
+    center_left = "main_left",    -- Left to left
+    center_right = "main_right",  -- Right to right
+    top_left = "bottom_left",     -- Direct corner to corner
+    top_right = "bottom_right",   -- Direct corner to corner
+    bottom_left = "main_left",    -- Bottom corners to built-in edges
+    bottom_right = "main_right",  -- Bottom corners to built-in edges
     
-    -- Cross-display transitions
-    center = "main_center",
-    center_left = "main_left",
-    center_right = "main_right",
+    -- Built-in display positions stay put
     main_center = "main_center",
     main_left = "main_left",
     main_right = "main_right"
@@ -745,32 +775,51 @@ end
 
 -- Function to move window in specified direction
 local function moveWindowInDirection(direction)
-  local win = hs.window.focusedWindow()
-  if win then
-    local currentPos = getCurrentPosition(win)
-    local nextPos = positionTransitions[direction] and positionTransitions[direction][currentPos]
-    
-    if nextPos then
-      local pos = standardPositions[nextPos]
-      if pos then
-        print(string.format("Moving from %s to %s on display %d", 
-          currentPos, nextPos, pos.display))
+    print("moveWindowInDirection called with direction:", direction)
+    local win = hs.window.focusedWindow()
+    if win then
+        print("Found focused window:", win:title())
+        local currentPos = getCurrentPosition(win)
+        print("Current position:", currentPos)
+        local nextPos = positionTransitions[direction] and positionTransitions[direction][currentPos]
+        print("Next position:", nextPos)
         
-        local app_config = {
-          app = win:application():name(),
-          title = win:title()
-        }
-        moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h, pos.display)
-      end
+        if nextPos then
+            local pos = standardPositions[nextPos]
+            if pos then
+                print(string.format("Moving from %s to %s on display %d", 
+                    currentPos, nextPos, pos.display))
+                
+                local app_config = {
+                    app = win:application():name(),
+                    title = win:title()
+                }
+                moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h, pos.display)
+            end
+        end
+    else
+        print("No focused window found")
     end
-  end
 end
 
--- Bind arrow keys with Hyper
-Hyper:bind({}, "left", function() moveWindowInDirection("left") end)
-Hyper:bind({}, "right", function() moveWindowInDirection("right") end)
-Hyper:bind({}, "up", function() moveWindowInDirection("up") end)
-Hyper:bind({}, "down", function() moveWindowInDirection("down") end)
+-- Bind arrow keys with Hyper and add debug output
+print("Setting up arrow key bindings...")
+Hyper:bind({}, "left", function() 
+    print("Hyper + left pressed")
+    moveWindowInDirection("left") 
+end)
+Hyper:bind({}, "right", function() 
+    print("Hyper + right pressed")
+    moveWindowInDirection("right") 
+end)
+Hyper:bind({}, "up", function() 
+    print("Hyper + up pressed")
+    moveWindowInDirection("up") 
+end)
+Hyper:bind({}, "down", function() 
+    print("Hyper + down pressed")
+    moveWindowInDirection("down") 
+end)
 
 -- Collection of apps with their default positions and sizes and their hotkeys
 local apps = {
@@ -903,4 +952,33 @@ window_watcher:subscribe(hs.window.filter.windowCreated, function(window)
     if shouldUnmanage(window) then
         yabaiSync({"window", "--toggle", "float"})
     end
+end)
+
+-- Add this helper function
+local function printAllWindows()
+    -- Print Hammerspoon window info
+    local windows = hs.window.allWindows()
+    print("\nHammerspoon windows:")
+    for _, win in ipairs(windows) do
+        local app = win:application()
+        local frame = win:frame()
+        print(string.format("App: '%s', Title: '%s', Bundle ID: '%s', Frame: x=%.0f,y=%.0f,w=%.0f,h=%.0f", 
+            app:name(), win:title(), app:bundleID(), frame.x, frame.y, frame.w, frame.h))
+    end
+    
+    -- Print yabai window info
+    print("\nYabai windows:")
+    local output = hs.execute("/run/current-system/sw/bin/yabai -m query --windows")
+    local windows_info = hs.json.decode(output)
+    for _, win in ipairs(windows_info) do
+        print(string.format("ID: %d, App: '%s', Title: '%s', Bundle: '%s', Frame: x=%d,y=%d,w=%d,h=%d, Floating: %s", 
+            win.id, win.app, win.title, win["bundle-identifier"], 
+            win.frame.x, win.frame.y, win.frame.w, win.frame.h,
+            win["is-floating"] and "yes" or "no"))
+    end
+end
+
+-- Add a debug hotkey to print windows
+Hyper:bind({"shift"}, "w", function() 
+    printAllWindows()
 end)
