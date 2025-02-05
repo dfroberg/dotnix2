@@ -685,7 +685,7 @@ local apps = {
   {
     app = "Slack",
     position = "bottom_right",
-    hotkey = {key = "l"}
+    hotkey = {key = "a"}
   },
   {
     app = "Cursor",
@@ -693,19 +693,24 @@ local apps = {
     hotkey = {key = "c"}
   },
   {
-    app = "Cursor",
-    position = "center_left",
-    hotkey = {key = "c", shift = true}
-  },
-  {
     app = "Obsidian",
-    position = "center",
+    position = "center_right",
     hotkey = {key = "o"}
   },
   {
-    app = "Obsidian",
+    app = "Gmail",
     position = "center_right",
-    hotkey = {key = "o", shift = true}
+    hotkey = {key = "m"}
+  },
+  {
+    app = "LinkedIn",
+    position = "center_right",
+    hotkey = {key = "l"}
+  },
+  {
+    app = "AWS Access Portal",
+    position = "center_right",
+    hotkey = {key = "w"}
   }
 }
 
