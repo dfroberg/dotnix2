@@ -649,6 +649,94 @@ local standardPositions = {
   bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.49}
 }
 
+-- Define position transitions for arrow keys
+local positionTransitions = {
+  left = {
+    center = "center_left",
+    center_right = "center",
+    center_left = "top_left",      -- Center to corner
+    top_right = "center_right",    -- Corner to center
+    bottom_right = "center_right", -- Corner to center
+    top_left = "top_right",        -- Stay at edge
+    bottom_left = "bottom_right"   -- Stay at edge
+  },
+  right = {
+    center_left = "center",
+    center = "center_right",
+    center_right = "top_right",    -- Center to corner
+    top_left = "center_left",      -- Corner to center
+    bottom_left = "center_left",   -- Corner to center
+    top_right = "top_left",      -- Stay at edge
+    bottom_right = "bottom_left" -- Stay at edge
+  },
+  up = {
+    center = "top_left",           -- Center to corner
+    center_left = "top_left",
+    center_right = "top_right",
+    bottom_left = "top_left",      -- Direct corner to corner
+    bottom_right = "top_right",    -- Direct corner to corner
+    top_left = "top_left",        -- Stay at edge
+    top_right = "top_right"       -- Stay at edge
+  },
+  down = {
+    center = "bottom_left",        -- Center to corner
+    center_left = "bottom_left",
+    center_right = "bottom_right",
+    top_left = "bottom_left",      -- Direct corner to corner
+    top_right = "bottom_right",    -- Direct corner to corner
+    bottom_left = "bottom_left",  -- Stay at edge
+    bottom_right = "bottom_right" -- Stay at edge
+  }
+}
+
+-- Function to get current window position
+local function getCurrentPosition(win)
+  local frame = win:frame()
+  local screen = win:screen()
+  local screenFrame = screen:frame()
+  
+  -- Convert absolute coordinates to relative
+  local relX = (frame.x - screenFrame.x) / screenFrame.w
+  local relY = (frame.y - screenFrame.y) / screenFrame.h
+  local relW = frame.w / screenFrame.w
+  local relH = frame.h / screenFrame.h
+  
+  -- Find matching standard position
+  for pos_name, pos in pairs(standardPositions) do
+    if math.abs(pos.x - relX) < 0.1 and
+        math.abs(pos.y - relY) < 0.1 and
+        math.abs(pos.w - relW) < 0.1 and
+        math.abs(pos.h - relH) < 0.1 then
+       return pos_name
+    end
+  end
+  return "center"  -- Default if no match found
+end
+
+-- Function to move window in specified direction
+local function moveWindowInDirection(direction)
+  local win = hs.window.focusedWindow()
+  if win then
+    local currentPos = getCurrentPosition(win)
+    local nextPos = positionTransitions[direction] and positionTransitions[direction][currentPos]
+    
+    if nextPos then
+      local app_config = {
+        app = win:application():name(),
+        title = win:title()
+      }
+      local pos = standardPositions[nextPos]
+      moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h)
+    end
+  end
+end
+
+-- Bind arrow keys with Hyper
+Hyper:bind({}, "left", function() moveWindowInDirection("left") end)
+Hyper:bind({}, "right", function() moveWindowInDirection("right") end)
+Hyper:bind({}, "up", function() moveWindowInDirection("up") end)
+Hyper:bind({}, "down", function() moveWindowInDirection("down") end)
+
 -- Collection of apps with their default positions and sizes and their hotkeys
 local apps = {
   {
