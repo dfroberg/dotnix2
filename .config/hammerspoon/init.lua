@@ -643,10 +643,10 @@ local standardPositions = {
   center = {x = 0.2, y = 0, w = 0.6, h = 1},
   center_left = {x = 0.2, y = 0, w = 0.3, h = 1},
   center_right = {x = 0.5, y = 0, w = 0.3, h = 1},
-  top_right = {x = 0.8, y = 0, w = 0.2, h = 0.49},
-  top_left = {x = 0, y = 0, w = 0.2, h = 0.49},
-  bottom_right = {x = 0.8, y = 0.5, w = 0.2, h = 0.49},
-  bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.49}
+  top_right = {x = 0.8, y = 0, w = 0.2, h = 0.495},
+  top_left = {x = 0, y = 0, w = 0.2, h = 0.495},
+  bottom_right = {x = 0.8, y = 0.5, w = 0.2, h = 0.495},
+  bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.495}
 }
 
 -- Define position transitions for arrow keys
