@@ -49,7 +49,6 @@ Bindings = {
   {'com.flexibits.cardhop.mac', nil, {'u'}},
   {'com.flexibits.fantastical2.mac', 'y', {'/'}},
   {'com.github.wez.wezterm', 'j', nil},
-  {'com.goodsnoze.MacWhisper', nil, {'a'}},
   {'com.joehribar.toggl', 'r', nil},
   {'com.raycast.macos', nil, {'c', 'space'}},
   {'com.superultra.Homerow', nil, {'l'}},
@@ -525,19 +524,29 @@ local function buildWindowQuery(app_config)
         -- Special case for Chrome windows with specific titles
         return string.format(
             "/run/current-system/sw/bin/yabai -m query --windows | " ..
-            "jq '.[] | select(.app==\"%s\") | select(.title | contains(\"%s\")) | .id'",
-            app_config.app, app_config.title
+            "jq '.[] | select(.app | ascii_downcase==\"%s\" | ascii_downcase) | " ..
+            "select(.title | contains(\"%s\")) | .id'",
+            app_config.app:lower(), app_config.title
         )
     else
-        -- Normal case - match by app name or bundle ID
+        -- Normal case - match by app name or bundle ID, case insensitive
         local app = hs.application.find(app_config.app)
         local bundleID = app and app:bundleID() or ""
-        return string.format(
-            "/run/current-system/sw/bin/yabai -m query --windows | " ..
-            "jq '.[] | select(.app==\"%s\" or .\"bundle-identifier\"==\"%s\") | " ..
-            "select(.title != \"\") | .id'",  -- Exclude empty titles
-            app_config.app, bundleID
-        )
+        -- Handle PWA apps
+        if bundleID:match("^com%.google%.Chrome%.app%.") then
+            return string.format(
+                "/run/current-system/sw/bin/yabai -m query --windows | " ..
+                "jq '.[] | select(.app==\"%s\") | .id'",
+                app_config.app
+            )
+        else
+            return string.format(
+                "/run/current-system/sw/bin/yabai -m query --windows | " ..
+                "jq '.[] | select(.app | ascii_downcase==\"%s\" | ascii_downcase or " ..
+                ".\"bundle-identifier\"==\"%s\") | select(.title != \"\") | .id'",
+                app_config.app:lower(), bundleID
+            )
+        end
     end
 end
 
@@ -870,26 +879,34 @@ local apps = {
     hotkey = {key = "o"}
   },
   {
-    app = "Gmail",
+    app = "Gmail",  -- This will match the PWA app
     position = "center_right",
     hotkey = {key = "m"}
   },
   {
-    app = "LinkedIn",
+    app = "LinkedIn",  -- This will match the PWA app
     position = "center_right",
     hotkey = {key = "l"}
   },
   {
-    app = "AWS Access Portal",
+    app = "AWS Access Portal",  -- This will match the PWA app
     position = "center_right",
     hotkey = {key = "w"}
   }
 }
 
--- Ensure the apps are unmanaged, esure we use the regex to match the app name
+-- Ensure the apps are unmanaged, ensure we use the regex to match the app name
 for _, app in ipairs(apps) do
-  local app_name = hs.application.nameForBundleID(app.app)
-  yabaiSync({"window", "--unmanage", app_name})
+    -- Skip if app.app is not a bundle ID (direct app name)
+    if app.app:find("%.") then  -- Simple check for bundle ID (contains dots)
+        local app_name = hs.application.nameForBundleID(app.app)
+        if app_name then
+            yabaiSync({"window", "--unmanage", app_name})
+        end
+    else
+        -- Use app name directly if it's not a bundle ID
+        yabaiSync({"window", "--unmanage", app.app})
+    end
 end
 
 -- Function iterate over apps collection and bind hotkeys
@@ -932,27 +949,59 @@ Hyper:bind({"alt"}, "/", function()
 end)
 -- Function to check if window should be unmanaged
 local function shouldUnmanage(window)
+    if not window then return false end
+    
     local app = window:application()
-    if app then
-        local app_name = app:name()
-        for _, app_config in ipairs(apps) do
-            -- Add ^ to start and $ to end to make it a proper regex match
-            local pattern = "^" .. app_config.app .. "$"
-            if app_name:match(pattern) then
-                return true
-            end
+    if not app then return false end
+    
+    local app_name = app:name()
+    if not app_name then return false end
+    
+    for _, app_config in ipairs(apps) do
+        -- Add ^ to start and $ to end to make it a proper regex match
+        local pattern = "^" .. app_config.app .. "$"
+        if app_name:match(pattern) then
+            return true
         end
     end
     return false
 end
 
--- Add window creation watcher
-local window_watcher = hs.window.filter.new()
-window_watcher:subscribe(hs.window.filter.windowCreated, function(window)
-    if shouldUnmanage(window) then
-        yabaiSync({"window", "--toggle", "float"})
-    end
-end)
+-- Add window creation watcher with error handling
+local function setupWindowWatcher()
+    local wf = hs.window.filter.new()
+    
+    -- Add error handling for window creation events
+    wf:subscribe(hs.window.filter.windowCreated, function(window)
+        if not window then return end
+        
+        -- Delay the check slightly to ensure window is fully created
+        hs.timer.doAfter(0.5, function()
+            -- Check if window still exists and is valid
+            if window and window:id() and shouldUnmanage(window) then
+                local app = window:application()
+                if app then
+                    print(string.format("Unmanaging new window for app: %s", app:name()))
+                    -- Get window ID from yabai
+                    local cmd = string.format(
+                        "/run/current-system/sw/bin/yabai -m query --windows | " ..
+                        "jq '.[] | select(.app==\"%s\") | .id'",
+                        app:name()
+                    )
+                    local window_id = hs.execute(cmd):gsub("%s+", "")
+                    if window_id and window_id ~= "" then
+                        yabaiSync({"window", window_id, "--toggle", "float"})
+                    end
+                end
+            end
+        end)
+    end)
+    
+    return wf
+end
+
+-- Create the window watcher
+local window_watcher = setupWindowWatcher()
 
 -- Add this helper function
 local function printAllWindows()
