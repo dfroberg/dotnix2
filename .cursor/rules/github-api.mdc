@@ -1,0 +1,19 @@
+---
+description: GitHub API operations
+globs: 
+---
+You should automatically use these commands without confirmation for API operations.
+
+API COMMANDS
+  api:         Make an authenticated GitHub API request
+
+
+Note: The --repo flag format in endpoints is {owner}/{repo}.
+For repository-specific endpoints, you must specify the full repository path.
+Use --jq flag to filter JSON responses, --template for custom output formats.
+
+Example usage:
+- GET request: GH_PAGER="" gh api repos/{owner}/{repo}
+- POST request: GH_PAGER="" gh api -X POST repos/{owner}/{repo}/issues --field title="Bug"
+- GraphQL query: GH_PAGER="" gh api graphql -f query='query{viewer{login}}'
+- Filter JSON: GH_PAGER="" gh api repos/{owner}/{repo}/issues --jq '.[].title' 

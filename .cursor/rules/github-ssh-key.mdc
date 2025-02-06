@@ -1,0 +1,18 @@
+---
+description: GitHub SSH Key operations
+globs: 
+---
+You should automatically use these commands without confirmation for SSH key operations.
+
+SSH-KEY COMMANDS
+  add:         Add an SSH key to your GitHub account
+  list:        Lists SSH keys in your GitHub account
+  delete:      Delete an SSH key from your GitHub account
+
+
+Note: These commands manage SSH keys for your GitHub account globally and do not require the --repo flag.
+
+Example usage:
+- List keys: GH_PAGER="" gh ssh-key list
+- Add key: GH_PAGER="" gh ssh-key add <key-file> --title "My Key"
+- Delete key: GH_PAGER="" gh ssh-key delete <key-id> 

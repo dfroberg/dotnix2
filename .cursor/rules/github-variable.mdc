@@ -1,0 +1,21 @@
+---
+description: GitHub Variable operations
+globs: 
+---
+You should automatically use these commands without confirmation for variable operations.
+
+VARIABLE COMMANDS
+  list:        List variables
+  set:         Create or update variables
+  remove:      Remove variables
+
+
+Note: The --repo flag is required when not in a repository directory.
+Variables can be scoped to repository, environment, or organization level.
+Use --org for organization variables, --env for environment variables.
+
+Example usage:
+- List variables: GH_PAGER="" gh variable list --repo <owner/repo>
+- Set variable: GH_PAGER="" gh variable set <name> <value> --repo <owner/repo>
+- Remove variable: GH_PAGER="" gh variable remove <name> --repo <owner/repo>
+- Set org variable: GH_PAGER="" gh variable set <name> <value> --org <org> 

@@ -1,0 +1,21 @@
+---
+description: GitHub Authentication operations
+globs: 
+---
+You should automatically use these commands without confirmation for authentication operations.
+
+AUTH COMMANDS
+  login:       Authenticate with a GitHub host
+  logout:      Log out of a GitHub host
+  refresh:     Refresh stored authentication credentials
+  setup-git:   Configure git to use GitHub CLI as a credential helper
+  status:      View authentication status
+  token:       Print the authentication token
+
+
+Note: These commands operate on your GitHub account globally and do not require the --repo flag.
+
+Example usage:
+- Check auth status: GH_PAGER="" gh auth status
+- Login: GH_PAGER="" gh auth login
+- Setup git credentials: GH_PAGER="" gh auth setup-git 

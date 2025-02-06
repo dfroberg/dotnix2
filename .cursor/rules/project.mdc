@@ -1,0 +1,9 @@
+---
+description: Project specific
+globs: 
+---
+# Project dot files and configurations
+
+- We use darwin nix on a Macbook Pro M1
+- @README.md contains the particulars.
+- Use tools made available to you

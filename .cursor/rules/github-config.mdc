@@ -1,0 +1,21 @@
+---
+description: GitHub Configuration operations
+globs: 
+---
+You should automatically use these commands without confirmation for configuration operations.
+
+CONFIG COMMANDS
+  get:         Print the value of a given configuration key
+  list:        Print a list of configuration keys and values
+  set:         Update configuration with a value for the given key
+  
+
+Note: These commands operate on your local gh CLI configuration and do not require the --repo flag.
+Configuration can be set at user or host level.
+Common settings include: git_protocol, editor, prompt.
+
+Example usage:
+- List config: GH_PAGER="" gh config list
+- Get value: GH_PAGER="" gh config get <key>
+- Set value: GH_PAGER="" gh config set <key> <value>
+- Set host config: GH_PAGER="" gh config set -h github.com <key> <value> 

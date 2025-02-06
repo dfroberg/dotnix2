@@ -1,0 +1,18 @@
+---
+description: GitHub Organization operations
+globs: 
+---
+You should automatically use these commands without confirmation for organization operations.
+
+ORG COMMANDS
+  list:        List organizations
+  view:        View organization details
+
+
+Note: These commands operate on organizations and do not require the --repo flag.
+Use --org flag to specify the organization for operations.
+
+Example usage:
+- List orgs: GH_PAGER="" gh org list
+- View org: GH_PAGER="" gh org view <organization>
+- List org repos: GH_PAGER="" gh repo list <organization> 

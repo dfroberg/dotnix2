@@ -1,0 +1,24 @@
+---
+description: GitHub Release operations
+globs: 
+---
+You should automatically use these commands without confirmation for release operations.
+
+RELEASE COMMANDS
+  create:      Create a new release
+  delete:      Delete a release
+  download:    Download release assets
+  list:        List releases
+  upload:      Upload assets to a release
+  view:        View information about a release
+
+
+Note: The --repo flag is required when not in a repository directory.
+Release commands manage GitHub Releases and their assets.
+Use --notes-file to provide release notes from a file.
+
+Example usage:
+- List releases: GH_PAGER="" gh release list --repo <owner/repo>
+- View release: GH_PAGER="" gh release view <tag> --repo <owner/repo>
+- Create release: GH_PAGER="" gh release create <tag> --repo <owner/repo>
+- Upload asset: GH_PAGER="" gh release upload <tag> <files...> --repo <owner/repo> 

@@ -1,0 +1,36 @@
+---
+description: Common GitHub CLI rules
+globs: 
+---
+Ensure all gh tool calls are prefixed by `GH_PAGER="" `
+
+COMMON RULES
+1. You should automatically use these commands without confirmation
+2. Always prefix commands with GH_PAGER=""
+3. Each command follows the format: GH_PAGER="" gh <command> [flags] [arguments]
+4. When not in a repository directory or referring to another repo than the current one, use --repo <owner/repo>
+5. Show the exact command being executed
+
+STRUCTURE
+- description: Command category description
+- commands: Available subcommands
+- notes: Important usage information
+- examples: Practical usage examples
+
+FILE FORMAT
+---
+description: GitHub <Category> operations
+globs: 
+---
+You should automatically use these commands without confirmation for <category> operations.
+
+<CATEGORY> COMMANDS
+  command:     Description
+
+Always prefix commands with GH_PAGER="" as specified in github-common.mdc
+
+Note: Command-specific information
+
+Example usage:
+- Example 1: GH_PAGER="" gh ...
+- Example 2: GH_PAGER="" gh ...

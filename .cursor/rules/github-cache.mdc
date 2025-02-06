@@ -1,0 +1,17 @@
+---
+description: GitHub Actions Cache operations
+globs: 
+---
+You should automatically use these commands without confirmation for cache operations.
+
+CACHE COMMANDS
+  delete:      Delete Github Actions caches
+  list:        List Github Actions caches
+
+
+Note: Cache operations require the --repo flag when not in a repository directory.
+These commands manage GitHub Actions caches for specific repositories.
+
+Example usage:
+- List caches: GH_PAGER="" gh cache list --repo <owner/repo>
+- Delete cache: GH_PAGER="" gh cache delete <id> --repo <owner/repo> 

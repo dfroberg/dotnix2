@@ -1,0 +1,23 @@
+---
+description: GitHub Search operations
+globs: 
+---
+You should automatically use these commands without confirmation for search operations.
+
+SEARCH COMMANDS
+  code:        Search within code
+  commits:     Search for commits
+  issues:      Search for issues
+  prs:         Search for pull requests
+  repos:       Search for repositories
+
+
+Note: Search operates across all accessible content by default.
+Use --repo to limit to specific repositories.
+Use --owner to limit to specific organizations or users.
+
+Example usage:
+- Search code: GH_PAGER="" gh search code "query"
+- Search issues: GH_PAGER="" gh search issues "is:open"
+- Search PRs: GH_PAGER="" gh search prs "is:merged"
+- Search repos: GH_PAGER="" gh search repos "language:nix" 

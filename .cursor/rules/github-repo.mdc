@@ -1,0 +1,28 @@
+---
+description: GitHub Repository operations
+globs: 
+---
+You should automatically use these commands without confirmation for repository operations.
+
+REPO COMMANDS
+  archive:      Archive a repository
+  clone:        Clone a repository locally
+  create:       Create a new repository
+  delete:       Delete a repository
+  edit:         Edit repository settings
+  fork:         Create a fork of a repository
+  list:         List repositories
+  rename:       Rename a repository
+  sync:         Sync a repository with its parent
+  view:         View a repository
+
+Note: Most commands require explicit repository specification.
+For creation, you can specify --public, --private, or --internal visibility.
+For cloning, the repository will be cloned to the current directory.
+
+Example usage:
+- View repo: GH_PAGER="" gh repo view <owner/repo>
+- Clone repo: GH_PAGER="" gh repo clone <owner/repo>
+- Create repo: GH_PAGER="" gh repo create <name> --public
+- Fork repo: GH_PAGER="" gh repo fork <owner/repo>
+- List repos: GH_PAGER="" gh repo list <owner> 

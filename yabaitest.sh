@@ -59,6 +59,13 @@ function setup_yabai() {
         yabai -m rule --add title="^Zoom Meeting$" manage=off
         yabai -m rule --add title="^Zoom$" manage=off
 
+        # Add rules for PWA apps
+        yabai -m rule --add app="^Gmail$" manage=off
+        yabai -m rule --add app="^LinkedIn$" manage=off
+        yabai -m rule --add app="^YouTube$" manage=off
+        yabai -m rule --add app="^Google Meet$" manage=off
+        yabai -m rule --add app="^AWS Access Portal$" manage=off
+
         # Event handlers
         yabai -m signal --add event=window_created action="yabai -m query --windows --window &> /dev/null || reposition_windows"
         yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"

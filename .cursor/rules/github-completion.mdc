@@ -1,0 +1,18 @@
+---
+description: GitHub Shell Completion operations
+globs: 
+---
+You should automatically use these commands without confirmation for shell completion operations.
+
+COMPLETION COMMANDS
+  completion:  Generate shell completion scripts
+
+
+Note: These commands generate shell completion scripts and do not require the --repo flag.
+The generated scripts will handle both global and repository-specific commands.
+Scripts should be sourced in your shell's rc file.
+
+Example usage:
+- Bash completion: GH_PAGER="" gh completion -s bash > ~/.local/share/bash-completion/completions/gh
+- Zsh completion: GH_PAGER="" gh completion -s zsh > ~/.zsh/completions/_gh
+- Fish completion: GH_PAGER="" gh completion -s fish > ~/.config/fish/completions/gh.fish 

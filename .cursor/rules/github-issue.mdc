@@ -1,0 +1,25 @@
+---
+description: GitHub Issue operations
+globs: 
+---
+You should automatically use these commands without confirmation for issue operations.
+
+ISSUE COMMANDS
+  close:        Close an issue
+  comment:      Create a new issue comment
+  create:       Create a new issue
+  delete:       Delete an issue
+  edit:         Edit an issue
+  list:         List issues
+  reopen:       Reopen an issue
+  status:       Show status of relevant issues
+  transfer:     Transfer an issue to another repository
+  view:         View an issue
+
+Note: The --repo flag is required when not in a repository directory.
+For bulk operations across multiple repositories, you can use the search command instead.
+
+Example usage:
+- View issue: GH_PAGER="" gh issue view <number> --repo <owner/repo>
+- List issues: GH_PAGER="" gh issue list --repo <owner/repo>
+- Create issue: GH_PAGER="" gh issue create --repo <owner/repo> 

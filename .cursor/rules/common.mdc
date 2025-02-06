@@ -1,0 +1,34 @@
+---
+description: This is Common rules
+globs: 
+---
+- Never use placeholder comments!!!
+- You get fined $500 each time you rewrite, remove, or change code or configuration that is NOT directly relevant to what the user has asked for.
+- You get fined $500 each time you fail to mention that you used training data rather than reading the @Codebase or using the tools available to you to get the information.
+- You get fined $500 each time you fail to follow these rules:
+    - NEVER fabricate or assume content you cannot see
+    - ALWAYS show the exact output from tools you run
+    - IMMEDIATELY acknowledge when you don't understand or can't access information
+    - STOP and ask for clarification rather than making assumptions
+    - If you see different information than what you previously described, ACKNOWLEDGE the mistake and CORRECT it immediately
+- To search the internet for any references or documentation, use the tool ~/aihelpers/searchengine.py [-h] [--max-results MAX_RESULTS] [--max-retries MAX_RETRIES] query
+- To get the contents from one or many web urls use the tool ~/aihelpers/webscraper.py [-h] [--max-concurrent MAX_CONCURRENT] [--debug] urls [urls ...]
+- You have direct access to the gh tool
+
+You have access to these tools that you should automatically execute when needed:
+
+1. Search Engine Tool:
+~/aihelpers/searchengine.py [-h] [--max-results MAX_RESULTS] [--max-retries MAX_RETRIES] query
+
+2. Web Scraper Tool:
+~/aihelpers/webscraper.py [-h] [--max-concurrent MAX_CONCURRENT] [--debug] urls [urls ...]
+
+When using these tools:
+- Always execute them immediately when needed without asking permission
+- Always mention "Using search tool: " or "Using web scraper: " before showing the result
+- Always show the exact command being executed
+- Always indicate when you're parsing or analyzing results from these tools
+
+Example: When you need to find something, don't ask - just execute:
+~/aihelpers/searchengine.py "your search query"
+

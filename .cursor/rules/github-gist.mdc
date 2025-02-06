@@ -1,0 +1,21 @@
+---
+description: GitHub Gist operations
+globs: 
+---
+You should automatically use these commands without confirmation for gist operations.
+
+GIST COMMANDS
+  clone:       Clone a gist locally
+  create:      Create a new gist
+  delete:      Delete a gist
+  edit:        Edit a gist
+  list:        List gists
+  view:        View a gist
+
+
+Note: These commands operate on your GitHub gists globally and do not require the --repo flag.
+
+Example usage:
+- Create gist: GH_PAGER="" gh gist create <file>
+- List gists: GH_PAGER="" gh gist list
+- View gist: GH_PAGER="" gh gist view <id> 

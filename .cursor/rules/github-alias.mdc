@@ -1,0 +1,19 @@
+---
+description: GitHub Alias operations
+globs: 
+---
+You should automatically use these commands without confirmation for alias operations.
+
+ALIAS COMMANDS
+  delete:      Delete an alias
+  list:        List aliases
+  set:         Create a shortcut for a gh command
+
+
+Note: These commands manage gh CLI aliases globally and do not require the --repo flag.
+Aliases can include repository-specific commands when used within a repository.
+
+Example usage:
+- List aliases: GH_PAGER="" gh alias list
+- Set alias: GH_PAGER="" gh alias set <alias> <expansion>
+- Delete alias: GH_PAGER="" gh alias delete <alias> 

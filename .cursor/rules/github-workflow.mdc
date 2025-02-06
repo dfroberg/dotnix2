@@ -1,0 +1,23 @@
+---
+description: GitHub Actions Workflow operations
+globs: 
+---
+You should automatically use these commands without confirmation for workflow operations.
+
+WORKFLOW COMMANDS
+  disable:      Disable a workflow
+  enable:       Enable a workflow
+  list:         List workflows
+  run:          Run a workflow
+  view:         View details about a workflow
+
+
+Note: The --repo flag is required when not in a repository directory.
+Workflow commands manage GitHub Actions workflow files.
+Workflows are defined in .github/workflows/*.yml files.
+
+Example usage:
+- List workflows: GH_PAGER="" gh workflow list --repo <owner/repo>
+- View workflow: GH_PAGER="" gh workflow view <id> --repo <owner/repo>
+- Run workflow: GH_PAGER="" gh workflow run <workflow> --repo <owner/repo>
+- Enable/disable: GH_PAGER="" gh workflow enable/disable <workflow> --repo <owner/repo> 

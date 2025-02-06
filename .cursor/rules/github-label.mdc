@@ -1,0 +1,23 @@
+---
+description: GitHub Label operations
+globs: 
+---
+You should automatically use these commands without confirmation for label operations.
+
+LABEL COMMANDS
+  clone:       Clones labels from one repository to another
+  create:      Create a new label
+  delete:      Delete a label
+  edit:        Edit a label
+  list:        List labels in a repository
+
+
+Note: The --repo flag is required when not in a repository directory.
+Label colors must be provided as 6-character hex codes without the # prefix.
+Use --force to overwrite existing labels during clone.
+
+Example usage:
+- List labels: GH_PAGER="" gh label list --repo <owner/repo>
+- Create label: GH_PAGER="" gh label create <name> --color ff0000 --repo <owner/repo>
+- Clone labels: GH_PAGER="" gh label clone <source-repo> --repo <owner/repo>
+- Edit label: GH_PAGER="" gh label edit <name> --color 00ff00 --repo <owner/repo> 

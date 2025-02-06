@@ -1,0 +1,16 @@
+---
+description: GitHub Status operations
+globs: 
+---
+You should automatically use these commands without confirmation for status operations.
+
+STATUS COMMANDS
+  status:      Print information about relevant issues, pull requests, and notifications
+
+
+Note: This command shows status across all your repositories. The --repo flag can be used to filter to a specific repository.
+
+Example usage:
+- Check status: GH_PAGER="" gh status
+- Check org status: GH_PAGER="" gh status --org <organization>
+- Check repo status: GH_PAGER="" gh status --repo <owner/repo> 
