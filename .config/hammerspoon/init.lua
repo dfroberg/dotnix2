@@ -35,8 +35,26 @@ printSpacesInfo()
 
 -- Function to execute yabai command and wait for completion
 local function yabaiSync(args)
-    local output, status = hs.execute("/run/current-system/sw/bin/yabai -m " .. table.concat(args, " "))
-    return status, output
+    -- Build the command string
+    local cmd = "/run/current-system/sw/bin/yabai -m " .. table.concat(args, " ")
+    print("Debug - Executing yabai command:", cmd)
+    
+    -- Execute the command
+    local output = hs.execute(cmd)
+    local success = output ~= nil
+    
+    -- For query commands, try to parse JSON
+    if success and args[1] == "query" then
+        local status, result = pcall(function() return hs.json.decode(output) end)
+        if status then
+            return true, result
+        else
+            print("Debug - Failed to parse JSON:", output)
+            return false, output
+        end
+    end
+    
+    return success, output
 end
 
 -- bundleID, global, local
@@ -220,19 +238,39 @@ local function getSpaceIDForIndex(screenSpaces, index)
     return nil
 end
 
+-- Function to get window ID for Chrome PWAs and regular apps
+local function getWindowID(appName)
+    -- Get all windows from yabai
+    local output, status = hs.execute("/run/current-system/sw/bin/yabai -m query --windows")
+    if status and output then
+        local windows = hs.json.decode(output)
+        for _, window in ipairs(windows) do
+            -- Check both app name and title for matches
+            if window.app == appName or window.title:match(appName) then
+                return window.id
+            end
+        end
+    end
+    return nil
+end
+
 -- Function to move window using both Hammerspoon and yabai
 local function moveWindowToSpace(win, targetSpace)
-    -- Get window ID
+    -- Get window ID using the new helper function
     local winID = win:id()
+    local appName = win:application():name()
+    local yabaiID = getWindowID(appName)
     
-    -- Move window with yabai using space index
-    yabaiSync({"window", tostring(winID), "--space", tostring(targetSpace)})
-    
-    -- Then move with Hammerspoon
-    hs.spaces.moveWindowToSpace(winID, targetSpace)
-    
-    -- Finally, focus the space
-    hs.spaces.gotoSpace(targetSpace)
+    if yabaiID then
+        -- Move window with yabai using space index
+        yabaiSync({"window", tostring(yabaiID), "--space", tostring(targetSpace)})
+        
+        -- Then move with Hammerspoon
+        hs.spaces.moveWindowToSpace(winID, targetSpace)
+        
+        -- Finally, focus the space
+        hs.spaces.gotoSpace(targetSpace)
+    end
 end
 
 -- Function to focus space using both Hammerspoon and yabai
@@ -521,32 +559,44 @@ local function buildWindowQuery(app_config)
         return "/run/current-system/sw/bin/yabai -m query --windows | " ..
                "jq '.[] | select(.app==\"zoom.us\" and .title==\"Zoom Meeting\") | .id'"
     elseif app_config.title then
-        -- Special case for Chrome windows with specific titles
+        -- Special case for windows with specific titles
         return string.format(
             "/run/current-system/sw/bin/yabai -m query --windows | " ..
-            "jq '.[] | select(.app | ascii_downcase==\"%s\" | ascii_downcase) | " ..
-            "select(.title | contains(\"%s\")) | .id'",
-            app_config.app:lower(), app_config.title
+            "jq '.[] | select((.app==\"%s\" or .app==\"app_mode_loader\") and (.title | contains(\"%s\"))) | .id'",
+            app_config.app, app_config.title
         )
     else
-        -- Normal case - match by app name or bundle ID, case insensitive
-        local app = hs.application.find(app_config.app)
-        local bundleID = app and app:bundleID() or ""
-        -- Handle PWA apps
-        if bundleID:match("^com%.google%.Chrome%.app%.") then
-            return string.format(
-                "/run/current-system/sw/bin/yabai -m query --windows | " ..
-                "jq '.[] | select(.app==\"%s\") | .id'",
-                app_config.app
-            )
+        -- Handle PWAs and regular apps
+        local query = string.format(
+            "/run/current-system/sw/bin/yabai -m query --windows | " ..
+            "jq '.[] | select(.app==\"%s\" or (.app==\"app_mode_loader\" and (.title | ascii_downcase | contains(\"%s\" | ascii_downcase)))) | .id'",
+            app_config.app, app_config.app
+        )
+        print("Debug - Full query:", query)
+        -- Also print all windows for debugging
+        local all_windows = hs.execute("/run/current-system/sw/bin/yabai -m query --windows")
+        print("Debug - All windows:", all_windows)
+        return query
+    end
+end
+
+-- Function to safely execute yabai command and get JSON output
+local function yabaiQuery(args)
+    local cmd = "/run/current-system/sw/bin/yabai -m " .. table.concat(args, " ")
+    print("Debug - Executing yabai command:", cmd)
+    local output = hs.execute(cmd)
+    
+    if output and output ~= "" then
+        local status, result = pcall(function() return hs.json.decode(output) end)
+        if status then
+            return result
         else
-            return string.format(
-                "/run/current-system/sw/bin/yabai -m query --windows | " ..
-                "jq '.[] | select(.app | ascii_downcase==\"%s\" | ascii_downcase or " ..
-                ".\"bundle-identifier\"==\"%s\") | select(.title != \"\") | .id'",
-                app_config.app:lower(), bundleID
-            )
+            print("Debug - Failed to parse JSON:", output)
+            return nil
         end
+    else
+        print("Debug - No output from yabai command")
+        return nil
     end
 end
 
@@ -587,68 +637,112 @@ local function moveAndResizeWindow(app_config, x, y, w, h, display_num)
     
     -- Try yabai first
     if window_id and window_id ~= "" then
-        -- First ensure window is floating
-        local status, window_info = yabaiSync({"query", "--windows", "--window", window_id})
-        if status then
-            local info = hs.json.decode(window_info)
-            if not info["is-floating"] then
-                yabaiSync({"window", window_id, "--toggle", "float"})
-                hs.timer.usleep(100000)  -- Wait for float toggle
+        -- First get all windows to find our target window
+        local windows = yabaiQuery({"query", "--windows"})
+        if not windows then
+            print("Failed to get windows list from yabai")
+            return
+        end
+        
+        -- Find our window in the list
+        local window_info = nil
+        for _, win in ipairs(windows) do
+            if tostring(win.id) == window_id then
+                window_info = win
+                break
             end
         end
-
-        -- Then move to target display
-        print("Moving to display:", display_num)
-        local move_cmd = string.format("/run/current-system/sw/bin/yabai -m window %s --display %d", window_id, display_num)
-        print("Move command:", move_cmd)
-        local status = os.execute(move_cmd)
-        if status then
-            print("Successfully moved window to display", display_num)
+        
+        if window_info then
+            print("Debug - Found window info:", hs.inspect(window_info))
             
-            -- Get the window's new frame on the target display
-            local status, window_info = yabaiSync({"query", "--windows", "--window", window_id})
-            if status then
-                local info = hs.json.decode(window_info)
-                local display = info.display
-                print(string.format("Window is now on display %d", display))
+            -- Force unmanage the window first if it's not floating and can't move/resize
+            if not window_info["is-floating"] and (not window_info["can-move"] or not window_info["can-resize"]) then
+                print("Window is managed but can't move/resize - forcing unmanage")
+                hs.execute(string.format("/run/current-system/sw/bin/yabai -m window %s --toggle float", window_id))
+                hs.timer.usleep(200000)  -- Wait longer for unmanage
                 
-                -- Get display dimensions
-                local status, display_output = yabaiSync({"query", "--displays"})
-                if status then
-                    local displays = hs.json.decode(display_output)
-                    local target_display = nil
-                    for _, d in ipairs(displays) do
-                        if d.index == display_num then
-                            target_display = d
-                            break
-                        end
+                -- Verify window is now floating
+                local verify_cmd = string.format("/run/current-system/sw/bin/yabai -m query --windows | jq '.[] | select(.id==%s)'", window_id)
+                local verify_output = hs.execute(verify_cmd)
+                local verify_info = hs.json.decode(verify_output)
+                if verify_info and not verify_info["is-floating"] then
+                    print("Warning: Failed to make window floating - attempting alternative method")
+                    -- Try alternative method using Hammerspoon
+                    local hs_win = hs.window.find(window_id)
+                    if hs_win then
+                        hs_win:setFullScreen(false)
+                        hs.timer.usleep(200000)
                     end
+                end
+            end
+
+            -- Check if window is already on the target display
+            if window_info.display == display_num then
+                print(string.format("Window already on display %d, skipping move", display_num))
+            else
+                -- Move to target display
+                print("Moving to display:", display_num)
+                local move_cmd = string.format("/run/current-system/sw/bin/yabai -m window %s --display %d", window_id, display_num)
+                print("Move command:", move_cmd)
+                hs.execute(move_cmd)
+                
+                -- Wait for the move to complete
+                hs.timer.usleep(300000)  -- Increased wait time to 300ms
+            end
+            
+            -- Get display dimensions
+            local displays = yabaiQuery({"query", "--displays"})
+            if displays then
+                local target_display = nil
+                for _, d in ipairs(displays) do
+                    if d.index == display_num then
+                        target_display = d
+                        break
+                    end
+                end
+                
+                if target_display then
+                    -- Calculate absolute positions based on display frame
+                    local frame = target_display.frame
+                    local abs_x = math.floor(frame.x + (frame.w * x))
+                    local abs_y = math.floor(frame.y + (frame.h * y))
+                    local abs_w = math.floor(frame.w * w)
+                    local abs_h = math.floor(frame.h * h)
                     
-                    if target_display then
-                        -- Calculate absolute positions based on display frame
-                        local frame = target_display.frame
-                        local abs_x = math.floor(frame.x + (frame.w * x))
-                        local abs_y = math.floor(frame.y + (frame.h * y))
-                        local abs_w = math.floor(frame.w * w)
-                        local abs_h = math.floor(frame.h * h)
-                        
-                        print(string.format("Resizing window to: x=%d, y=%d, w=%d, h=%d", 
-                            abs_x, abs_y, abs_w, abs_h))
-                        
-                        -- Move and resize
-                        yabaiSync({"window", window_id, "--move", string.format("abs:%d:%d", abs_x, abs_y)})
-                        hs.timer.usleep(50000)
-                        yabaiSync({"window", window_id, "--resize", string.format("abs:%d:%d", abs_w, abs_h)})
-                        yabaiSync({"window", window_id, "--focus"})
+                    print(string.format("Resizing window to: x=%d, y=%d, w=%d, h=%d", 
+                        abs_x, abs_y, abs_w, abs_h))
+                    
+                    -- Move and resize
+                    hs.execute(string.format("/run/current-system/sw/bin/yabai -m window %s --move abs:%d:%d", window_id, abs_x, abs_y))
+                    hs.timer.usleep(50000)  -- Wait 50ms between operations
+                    hs.execute(string.format("/run/current-system/sw/bin/yabai -m window %s --resize abs:%d:%d", window_id, abs_w, abs_h))
+                    
+                    -- Try to focus the window using both yabai and Hammerspoon
+                    print("Attempting to focus window...")
+                    hs.execute(string.format("/run/current-system/sw/bin/yabai -m window %s --focus", window_id))
+                    
+                    -- Fallback to Hammerspoon focus if yabai focus fails
+                    local hs_win = hs.window.find(window_id)
+                    if hs_win then
+                        print("Using Hammerspoon to focus window")
+                        hs_win:focus()
+                    else
+                        print("Warning: Could not find window with Hammerspoon")
+                        -- Try focusing by app name as last resort
+                        local app = hs.application.find(app_config.app)
+                        if app then
+                            print("Focusing app by name:", app_config.app)
+                            app:activate()
+                        end
                     end
                 end
             end
         else
-            print("Failed to move window to display", display_num)
+            print("Failed to find window info in windows list")
         end
-        
-        -- Wait for the display move to complete
-        hs.timer.usleep(200000)  -- 200ms
+    else
+        print("No window ID found for app:", app_config.app)
     end
 end
 

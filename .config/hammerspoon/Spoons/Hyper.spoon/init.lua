@@ -45,7 +45,8 @@ function m:bindPassThrough(key, app)
       hs.application.launchOrFocusByBundleID(app)
       hs.timer.waitWhile(
         function()
-          return not hs.application.get(app):isFrontmost()
+          local appInstance = hs.application.get(app)
+          return not (appInstance and appInstance:isFrontmost())
         end,
         function()
           hs.eventtap.keyStroke({'cmd','alt','shift','ctrl'}, key)
