@@ -5,6 +5,28 @@ hs.loadSpoon('Headspace'):start()
 local spaces = require("hs.spaces")
 local window = require("hs.window")
 local screen = require("hs.screen")
+local brave = require('brave')
+local fnutils = require("hs.fnutils")
+local json = require("hs.json")
+local task = require("hs.task")
+local timer = require("hs.timer")
+local notify = require("hs.notify")
+local chooser = require("hs.chooser")
+local urlevent = require("hs.urlevent")
+local shortcuts = require("hs.shortcuts")
+local fs = require("hs.fs")
+local inspect = require("hs.inspect")
+local alert = require("hs.alert")
+local application = require("hs.application")
+local audiodevice = require("hs.audiodevice")
+local settings = require("hs.settings")
+local window_filter = require("hs.window.filter")
+
+-- Print startup message
+print("\n=== Starting Hammerspoon configuration ===")
+
+-- Enable Spotlight support for better app name matching
+hs.application.enableSpotlightForNameSearches(true)
 
 -- Check accessibility permissions
 if not hs.accessibilityState() then
@@ -550,8 +572,6 @@ Hyper:bind({"shift"}, "r", function()
   hs.reload()
 end)
 
-local brave = require('brave')
-
 -- Random bindings
 local chooseFromGroup = function(choice)
   local name = hs.application.nameForBundleID(choice.bundleID)
@@ -674,9 +694,6 @@ hs.audiodevice.watcher.setCallback(function(event)
   end
 end)
 hs.audiodevice.watcher.start()
-
--- Enable Spotlight support for better app name matching
-hs.application.enableSpotlightForNameSearches(true)
 
 local function focusWindowByApp(app_name)
     -- For Zoom, specifically target the main window
