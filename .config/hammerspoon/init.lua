@@ -12,6 +12,156 @@ if not hs.accessibilityState() then
     hs.open("/System/Library/PreferencePanes/Security.prefPane")
 end
 
+-- Define standard position like top-right, top-left, bottom-right, bottom-left
+local standardPositions = {
+  -- External display (display 2) positions
+  center = {x = 0.2, y = 0, w = 0.6, h = 1, display = 2},
+  center_left = {x = 0.2, y = 0, w = 0.3, h = 1, display = 2},
+  center_right = {x = 0.5, y = 0, w = 0.3, h = 1, display = 2},
+  top_right = {x = 0.8, y = 0, w = 0.2, h = 0.495, display = 2},
+  top_left = {x = 0, y = 0, w = 0.2, h = 0.495, display = 2},
+  bottom_right = {x = 0.8, y = 0.5, w = 0.2, h = 0.495, display = 2},
+  bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.495, display = 2},
+  
+  -- Built-in display (display 1) positions
+  main_center = {x = 0, y = 0, w = 1, h = 1, display = 1},
+  main_left = {x = 0, y = 0, w = 0.5, h = 1, display = 1},
+  main_right = {x = 0.5, y = 0, w = 0.5, h = 1, display = 1}
+}
+
+-- Define position transitions for arrow keys
+local positionTransitions = {
+  left = {
+    -- External display transitions
+    center = "center_left",
+    center_right = "center",
+    center_left = "top_left",      -- Center to corner
+    top_right = "center_right",    -- Corner to center
+    bottom_right = "center_right", -- Corner to center
+    top_left = "top_left",        -- Stay at edge
+    bottom_left = "bottom_left",   -- Stay at edge
+    
+    -- Built-in display transitions
+    main_center = "main_left",
+    main_right = "main_center",
+    main_left = "main_left"       -- Stay at edge
+  },
+  right = {
+    -- External display transitions
+    center_left = "center",
+    center = "center_right",
+    center_right = "top_right",    -- Center to corner
+    top_left = "center_left",      -- Corner to center
+    bottom_left = "center_left",   -- Corner to center
+    top_right = "top_right",      -- Stay at edge
+    bottom_right = "bottom_right", -- Stay at edge
+    
+    -- Built-in display transitions
+    main_left = "main_center",
+    main_center = "main_right",
+    main_right = "main_right"     -- Stay at edge
+  },
+  up = {
+    -- External display transitions
+    center = "top_left",          -- Center to corner
+    center_left = "top_left",
+    center_right = "top_right",
+    bottom_left = "top_left",     -- Direct corner to corner
+    bottom_right = "top_right",   -- Direct corner to corner
+    top_left = "top_left",       -- Stay at edge
+    top_right = "top_right",     -- Stay at edge
+    
+    -- Cross-display transitions from built-in to external
+    main_center = "center",       -- Center to center
+    main_left = "center_left",    -- Left to left
+    main_right = "center_right"   -- Right to right
+  },
+  down = {
+    -- External display transitions
+    center = "main_center",       -- Center to center
+    center_left = "main_left",    -- Left to left
+    center_right = "main_right",  -- Right to right
+    top_left = "bottom_left",     -- Direct corner to corner
+    top_right = "bottom_right",   -- Direct corner to corner
+    bottom_left = "main_left",    -- Bottom corners to built-in edges
+    bottom_right = "main_right",  -- Bottom corners to built-in edges
+    
+    -- Built-in display positions stay put
+    main_center = "main_center",
+    main_left = "main_left",
+    main_right = "main_right"
+  }
+}
+
+-- Collection of apps with their default positions and sizes and their hotkeys
+local apps = {
+  {
+    app = "Joplin",
+    position = "top_right",
+    hotkey = {key = "j"}
+  },
+  {
+    app = "Google Meet",
+    position = "top_left",
+    hotkey = {key = "g"},
+    isPWA = true
+  },
+  {
+    app = "Google Chrome",
+    title = "dfroberg (Danny Froberg)",  -- Will match any Chrome window containing "Meet"
+    position = "center_right",
+    hotkey = {key = "p"}
+  },
+  {
+    app = "YouTube",
+    position = "bottom_right",
+    hotkey = {key = "y"}
+  },
+  {
+    app = "Signal",
+    position = "top_left",
+    hotkey = {key = "s"}
+  },
+  {
+    app = "zoom.us",
+    position = "top_left",
+    hotkey = {key = "z"}
+  },
+  {
+    app = "Slack",
+    position = "bottom_right",
+    hotkey = {key = "a"}
+  },
+  {
+    app = "Cursor",
+    position = "center",
+    hotkey = {key = "c"}
+  },
+  {
+    app = "Obsidian",
+    position = "center_right",
+    hotkey = {key = "o"}
+  },
+  {
+    app = "Gmail",  -- This will match the PWA app
+    position = "center_right",
+    hotkey = {key = "m"},
+    isPWA = true
+  },
+  {
+    app = "LinkedIn",  -- This will match the PWA app
+    position = "center_right",
+    hotkey = {key = "l"},
+    isPWA = true
+  },
+  {
+    app = "AWS Access Portal",  -- This will match the PWA app
+    position = "center_right",
+    hotkey = {key = "w"},
+    isPWA = true
+  }
+}
+
 -- Debug function to print spaces info
 local function printSpacesInfo()
     local allSpaces = hs.spaces.allSpaces()
@@ -746,87 +896,6 @@ local function moveAndResizeWindow(app_config, x, y, w, h, display_num)
     end
 end
 
--- Define standard position like top-right, top-left, bottom-right, bottom-left
-local standardPositions = {
-  -- External display (display 2) positions
-  center = {x = 0.2, y = 0, w = 0.6, h = 1, display = 2},
-  center_left = {x = 0.2, y = 0, w = 0.3, h = 1, display = 2},
-  center_right = {x = 0.5, y = 0, w = 0.3, h = 1, display = 2},
-  top_right = {x = 0.8, y = 0, w = 0.2, h = 0.495, display = 2},
-  top_left = {x = 0, y = 0, w = 0.2, h = 0.495, display = 2},
-  bottom_right = {x = 0.8, y = 0.5, w = 0.2, h = 0.495, display = 2},
-  bottom_left = {x = 0, y = 0.5, w = 0.2, h = 0.495, display = 2},
-  
-  -- Built-in display (display 1) positions
-  main_center = {x = 0, y = 0, w = 1, h = 1, display = 1},
-  main_left = {x = 0, y = 0, w = 0.5, h = 1, display = 1},
-  main_right = {x = 0.5, y = 0, w = 0.5, h = 1, display = 1}
-}
-
--- Define position transitions for arrow keys
-local positionTransitions = {
-  left = {
-    -- External display transitions
-    center = "center_left",
-    center_right = "center",
-    center_left = "top_left",      -- Center to corner
-    top_right = "center_right",    -- Corner to center
-    bottom_right = "center_right", -- Corner to center
-    top_left = "top_left",        -- Stay at edge
-    bottom_left = "bottom_left",   -- Stay at edge
-    
-    -- Built-in display transitions
-    main_center = "main_left",
-    main_right = "main_center",
-    main_left = "main_left"       -- Stay at edge
-  },
-  right = {
-    -- External display transitions
-    center_left = "center",
-    center = "center_right",
-    center_right = "top_right",    -- Center to corner
-    top_left = "center_left",      -- Corner to center
-    bottom_left = "center_left",   -- Corner to center
-    top_right = "top_right",      -- Stay at edge
-    bottom_right = "bottom_right", -- Stay at edge
-    
-    -- Built-in display transitions
-    main_left = "main_center",
-    main_center = "main_right",
-    main_right = "main_right"     -- Stay at edge
-  },
-  up = {
-    -- External display transitions
-    center = "top_left",          -- Center to corner
-    center_left = "top_left",
-    center_right = "top_right",
-    bottom_left = "top_left",     -- Direct corner to corner
-    bottom_right = "top_right",   -- Direct corner to corner
-    top_left = "top_left",       -- Stay at edge
-    top_right = "top_right",     -- Stay at edge
-    
-    -- Cross-display transitions from built-in to external
-    main_center = "center",       -- Center to center
-    main_left = "center_left",    -- Left to left
-    main_right = "center_right"   -- Right to right
-  },
-  down = {
-    -- External display transitions
-    center = "main_center",       -- Center to center
-    center_left = "main_left",    -- Left to left
-    center_right = "main_right",  -- Right to right
-    top_left = "bottom_left",     -- Direct corner to corner
-    top_right = "bottom_right",   -- Direct corner to corner
-    bottom_left = "main_left",    -- Bottom corners to built-in edges
-    bottom_right = "main_right",  -- Bottom corners to built-in edges
-    
-    -- Built-in display positions stay put
-    main_center = "main_center",
-    main_left = "main_left",
-    main_right = "main_right"
-  }
-}
-
 -- Function to get current window position
 local function getCurrentPosition(win)
   local frame = win:frame()
@@ -924,70 +993,6 @@ Hyper:bind({}, "down", function()
     moveWindowInDirection("down") 
 end)
 
--- Collection of apps with their default positions and sizes and their hotkeys
-local apps = {
-  {
-    app = "Joplin",
-    position = "top_right",
-    hotkey = {key = "j"}
-  },
-  {
-    app = "Google Meet",
-    position = "top_left",
-    hotkey = {key = "g"}
-  },
-  {
-    app = "Google Chrome",
-    title = "dfroberg (Danny Froberg)",  -- Will match any Chrome window containing "Meet"
-    position = "center_right",
-    hotkey = {key = "p"}
-  },
-  {
-    app = "YouTube",
-    position = "bottom_right",
-    hotkey = {key = "y"}
-  },
-  {
-    app = "Signal",
-    position = "top_left",
-    hotkey = {key = "s"}
-  },
-  {
-    app = "zoom.us",
-    position = "top_left",
-    hotkey = {key = "z"}
-  },
-  {
-    app = "Slack",
-    position = "bottom_right",
-    hotkey = {key = "a"}
-  },
-  {
-    app = "Cursor",
-    position = "center",
-    hotkey = {key = "c"}
-  },
-  {
-    app = "Obsidian",
-    position = "center_right",
-    hotkey = {key = "o"}
-  },
-  {
-    app = "Gmail",  -- This will match the PWA app
-    position = "center_right",
-    hotkey = {key = "m"}
-  },
-  {
-    app = "LinkedIn",  -- This will match the PWA app
-    position = "center_right",
-    hotkey = {key = "l"}
-  },
-  {
-    app = "AWS Access Portal",  -- This will match the PWA app
-    position = "center_right",
-    hotkey = {key = "w"}
-  }
-}
 
 -- Ensure the apps are unmanaged, ensure we use the regex to match the app name
 for _, app in ipairs(apps) do
