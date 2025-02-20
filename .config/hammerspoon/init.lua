@@ -34,6 +34,10 @@ if not hs.accessibilityState() then
     hs.open("/System/Library/PreferencePanes/Security.prefPane")
 end
 
+-- Init Hyper
+Hyper = spoon.Hyper
+Hyper:bindHotKeys({hyperKey = {{}, 'F19'}})
+
 -- Define standard position like top-right, top-left, bottom-right, bottom-left
 local standardPositions = {
   -- External display (display 2) positions
@@ -118,6 +122,86 @@ local positionTransitions = {
 -- Collection of apps with their default positions and sizes and their hotkeys
 local apps = {
   {
+    app = "Drafts",
+    bundleID = "com.agiletortoise.Drafts-OSX",
+    position = "top_right",
+    hotkey = {key = "d"},
+    local_keys = {"x", "n"}
+  },
+  {
+    app = "Messages",
+    bundleID = "com.apple.MobileSMS",
+    position = "top_right",
+    hotkey = {key = "q"}
+  },
+  {
+    app = "Finder",
+    bundleID = "com.apple.finder",
+    position = "center",
+    hotkey = {key = "f"}
+  },
+  {
+    app = "Outlook",
+    bundleID = "com.microsoft.Outlook",
+    position = "center_right",
+    hotkey = {key = "e"}
+  },
+  {
+    app = "Things",
+    bundleID = "com.culturedcode.ThingsMac",
+    position = "top_right",
+    hotkey = {key = "t"},
+    local_keys = {",", "."}
+  },
+  {
+    app = "Cardhop",
+    bundleID = "com.flexibits.cardhop.mac",
+    position = "center",
+    local_keys = {"u"}
+  },
+  {
+    app = "Fantastical",
+    bundleID = "com.flexibits.fantastical2.mac",
+    position = "center",
+    local_keys = {"/"}
+  },
+  {
+    app = "WezTerm",
+    bundleID = "com.github.wez.wezterm",
+    position = "center",
+    hotkey = {key = "x"}
+  },
+  {
+    app = "Toggl",
+    bundleID = "com.joehribar.toggl",
+    position = "top_right",
+    hotkey = {key = "r"}
+  },
+  {
+    app = "Raycast",
+    bundleID = "com.raycast.macos",
+    position = "center",
+    local_keys = {"c", "space"}
+  },
+  {
+    app = "Homerow",
+    bundleID = "com.superultra.Homerow",
+    position = "center",
+    local_keys = {"l"}
+  },
+  {
+    app = "Bartender",
+    bundleID = "com.surteesstudios.Bartender",
+    position = "center",
+    local_keys = {"b"}
+  },
+  {
+    app = "Obsidian",
+    bundleID = "md.obsidian",
+    position = "center_right",
+    hotkey = {key = "o"}
+  },
+  {
     app = "Joplin",
     position = "top_right",
     hotkey = {key = "j"}
@@ -130,7 +214,7 @@ local apps = {
   },
   {
     app = "Google Chrome",
-    title = "dfroberg (Danny Froberg)",  -- Will match any Chrome window containing "Meet"
+    title = "dfroberg (Danny Froberg)",
     position = "center_right",
     hotkey = {key = "p"}
   },
@@ -160,24 +244,19 @@ local apps = {
     hotkey = {key = "c"}
   },
   {
-    app = "Obsidian",
-    position = "center_right",
-    hotkey = {key = "o"}
-  },
-  {
-    app = "Gmail",  -- This will match the PWA app
+    app = "Gmail",
     position = "center_right",
     hotkey = {key = "m"},
     isPWA = true
   },
   {
-    app = "LinkedIn",  -- This will match the PWA app
+    app = "LinkedIn",
     position = "center_right",
     hotkey = {key = "l"},
     isPWA = true
   },
   {
-    app = "AWS Access Portal",  -- This will match the PWA app
+    app = "AWS Access Portal",
     position = "center_right",
     hotkey = {key = "w"},
     isPWA = true
@@ -229,36 +308,25 @@ local function yabaiSync(args)
     return success, output
 end
 
--- bundleID, global, local
-Bindings = {
-  {'com.agiletortoise.Drafts-OSX', 'd', {'x', 'n'}},
-  {'com.apple.MobileSMS', 'q', nil},
-  {'com.apple.finder', 'f', nil},
-  {'com.microsoft.Outlook', 'e', nil},
-  {'com.culturedcode.ThingsMac', 't', {',', '.'}},
-  {'com.flexibits.cardhop.mac', nil, {'u'}},
-  {'com.flexibits.fantastical2.mac', 'y', {'/'}},
-  {'com.github.wez.wezterm', 'j', nil},
-  {'com.joehribar.toggl', 'r', nil},
-  {'com.raycast.macos', nil, {'c', 'space'}},
-  {'com.superultra.Homerow', nil, {'l'}},
-  {'com.surteesstudios.Bartender', nil, {'b'}},
-  {'md.obsidian', 'g', nil},
-}
-
-Hyper = spoon.Hyper
-
-Hyper:bindHotKeys({hyperKey = {{}, 'F19'}})
-
-hs.fnutils.each(Bindings, function(bindingTable)
-  local bundleID, globalBind, localBinds = table.unpack(bindingTable)
-  if globalBind then
-    Hyper:bind({}, globalBind, function() hs.application.launchOrFocusByBundleID(bundleID) end)
-  end
-  if localBinds then
-    hs.fnutils.each(localBinds, function(key)
-      Hyper:bindPassThrough(key, bundleID)
+hs.fnutils.each(apps, function(app)
+  -- Bind app launch hotkeys
+  if app.hotkey then
+    local mods = {"alt"}  -- Always use alt modifier
+    if app.hotkey.shift then
+      table.insert(mods, "shift")
+    end
+    Hyper:bind(mods, app.hotkey.key, function()
+      local pos = standardPositions[app.position]
+      moveAndResizeWindow(app, pos.x, pos.y, pos.w, pos.h)
+      focusWindowByApp(app.app)
     end)
+  end
+  
+  -- Bind local keys if they exist
+  if app.local_keys and app.bundleID then
+    for _, key in ipairs(app.local_keys) do
+      Hyper:bindPassThrough(key, app.bundleID)
+    end
   end
 end)
 
@@ -291,108 +359,6 @@ local yabai = function(args, completion)
   end
   yabai_task:start()
 end
-
--- window bindings via yabai above
--- we are using jankyborders to highlight which is focused
--- Window management bindings using yabai
---
--- Focus window in direction:
---   Ctrl + h/j/k/l: left/down/up/right
--- Swap window in direction:
---   Shift + h/j/k/l: left/down/up/right
--- Warp window in direction (move mouse to window):
---   Cmd + h/j/k/l: left/down/up/right
--- Toggle window split type:
---   Shift + x: toggle split
--- Toggle window zoom parent:
---   Shift + z: toggle zoom parent
--- Toggle window float:
---   Shift + f: toggle float
--- Set window ratio to:
---   Shift + u/i/o/p: 0.3/0.5/0.7/0.8
--- Toggle space layout between bsp and stack:
---   Shift + space: toggle space layout
--- Focus recent display:
---   Shift + tab: focus recent display
--- Focus window in direction: Ctrl + h/j/k/l: left/down/up/right
-Hyper
-:bind({"control"}, "h", function()
-  yabai({"-m", "window", "--focus", "west"})
-end)
-:bind({"control"}, "j", function()
-  yabai({"-m", "window", "--focus", "south"})
-end)
-:bind({"control"}, "k", function()
-  yabai({"-m", "window", "--focus", "north"})
-end)
-:bind({"control"}, "l", function()
-  yabai({"-m", "window", "--focus", "east"})
-end)
--- Swap window in direction: Shift + h/j/k/l: left/down/up/right
-:bind({"shift"}, "h", function()
-  yabai({"-m", "window", "--swap", "west"})
-end)
-:bind({"shift"}, "j", function()
-  yabai({"-m", "window", "--swap", "south"})
-end)
-:bind({"shift"}, "k", function()
-  yabai({"-m", "window", "--swap", "north"})
-end)
-:bind({"shift"}, "l", function()
-  yabai({"-m", "window", "--swap", "east"})
-end)
--- Warp window in direction (move mouse to window): Cmd + h/j/k/l: left/down/up/right
-:bind({"cmd"}, "h", function()
-  yabai({"-m", "window", "--warp", "west"})
-end)
-:bind({"cmd"}, "j", function()
-  yabai({"-m", "window", "--warp", "south"})
-end)
-:bind({"cmd"}, "k", function()
-  yabai({"-m", "window", "--warp", "north"})
-end)
-:bind({"cmd"}, "l", function()
-  yabai({"-m", "window", "--warp", "east"})
-end)
--- Toggle window split type: Shift + x: toggle split
-:bind({"shift"}, "x", function()
-  yabai({"-m", "window", "--toggle", "split"})
-end)
--- Toggle window zoom parent: Shift + z: toggle zoom parent
-:bind({"shift"}, "z", function()
-  yabai({"-m", "window", "--toggle", "zoom-parent"})
-end)
--- Toggle window float: Shift + f: toggle float
-:bind({"shift"}, "f", function()
-  yabai({"-m", "window", "--toggle", "float"})
-end)
--- Set window ratio to: Shift + u/i/o/p: 0.3/0.5/0.7/0.8
-:bind({"shift"}, "u", function()
-  yabai({"-m", "window", "--ratio", "abs:0.3"})
-end)
-:bind({"shift"}, "i", function()
-  yabai({"-m", "window", "--ratio", "abs:0.5"})
-end)
-:bind({"shift"}, "o", function()
-  yabai({"-m", "window", "--ratio", "abs:0.7"})
-end)
-:bind({"shift"}, "p", function()
-  yabai({"-m", "window", "--ratio", "abs:0.8"})
-end)
--- Toggle space layout between bsp and stack: Shift + space: toggle space layout
-:bind({"shift"}, "space", function()
-  if Hyper.layout and Hyper.layout == "bsp" then
-    Hyper.layout = "stack"
-    yabai({"-m", "space", "--layout", "stack"})
-  else
-    Hyper.layout = "bsp"
-    yabai({"-m", "space", "--layout", "bsp"})
-  end
-end)
--- Focus recent display: Shift + tab: focus recent display
-:bind({"shift"}, "tab", function()
-  yabai({"-m", "window", "--display", "recent", "--focus"})
-end)
 
 -- Function to get space ID from index
 local function getSpaceIDForIndex(screenSpaces, index)
@@ -1027,15 +993,25 @@ end
 
 -- Function iterate over apps collection and bind hotkeys
 for _, app in ipairs(apps) do
-  local mods = {"alt"}
-  if app.hotkey.shift then
-    table.insert(mods, "shift")
+  -- Bind app launch hotkeys
+  if app.hotkey then
+    local mods = {"alt"}  -- Always use alt modifier
+    if app.hotkey.shift then
+      table.insert(mods, "shift")
+    end
+    Hyper:bind(mods, app.hotkey.key, function()
+      local pos = standardPositions[app.position]
+      moveAndResizeWindow(app, pos.x, pos.y, pos.w, pos.h)
+      focusWindowByApp(app.app)
+    end)
   end
-  Hyper:bind(mods, app.hotkey.key, function()
-    local pos = standardPositions[app.position]
-    moveAndResizeWindow(app, pos.x, pos.y, pos.w, pos.h)
-    focusWindowByApp(app.app)
-  end)
+  
+  -- Bind local keys if they exist
+  if app.local_keys and app.bundleID then
+    for _, key in ipairs(app.local_keys) do
+      Hyper:bindPassThrough(key, app.bundleID)
+    end
+  end
 end
 
 -- Function to position currently focused window in a standard position
