@@ -88,7 +88,7 @@ return {
   },
   {
     app = "Joplin",
-    position = "top_right",
+    position = "center_right",
     hotkey = {key = "j"},
     tags = {"utils"}
   },
@@ -124,7 +124,7 @@ return {
   },
   {
     app = "YouTube",
-    position = "bottom_right",
+    position = "top_right",
     hotkey = {key = "y"},
     isPWA = true,
     tags = {"utils"}
@@ -149,12 +149,6 @@ return {
     tags = {"comms", "work"}
   },
   {
-    app = "Cursor",
-    position = "center",
-    hotkey = {key = "c"},
-    tags = {"utils"}
-  },
-  {
     app = "Gmail",
     position = "center_right",
     hotkey = {key = "m"},
@@ -171,9 +165,24 @@ return {
   {
     app = "AWS Access Portal",
     position = "center_right",
-    hotkey = {key = "w"},
+    hotkey = {key = "p"},
     isPWA = true,
     tags = {"work"}
+  },
+  -- devtools
+  {
+    app = "Cursor",
+    bundleID = "com.todesktop.230313mzl4w4u92",
+    position = "center",
+    hotkey = {key = "c"},
+    tags = {"devtools", "utils"}
+  },
+  {
+    app = "Warp",
+    bundleID = "dev.warp.Warp-Stable",
+    position = "bottom_left",
+    hotkey = {key = "w"},
+    tags = {"devtools"}
   },
   -- Urls
   {

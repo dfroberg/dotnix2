@@ -68,11 +68,17 @@
         exit 1
       fi
     '';
+
+    activation.cleanupHammerspoon = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+      echo "Cleaning up Hammerspoon symlinks..."
+      rm -rf ${config.home.homeDirectory}/.hammerspoon
+    '';
+
     # Home Manager is pretty good at managing dotfiles. The primary way to manage
     # plain files is through 'home.file'.
     file = {
       hammerspoon = lib.mkIf pkgs.stdenvNoCC.isDarwin {
-        source = ./../.config/hammerspoon;
+        source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/hammerspoon";
         target = ".hammerspoon";
         recursive = true;
         onChange = ''

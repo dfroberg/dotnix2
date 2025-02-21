@@ -11,6 +11,12 @@ return {
         trigger_key = 'z',
         position = "top_left"
     },
+    devtools = {
+        name = "Developer Tools",
+        trigger_mods = {'cmd'},
+        trigger_key = 'd',
+        position = "center"
+    },
     work = {
         name = "Work Apps",
         trigger_mods = {'cmd'},

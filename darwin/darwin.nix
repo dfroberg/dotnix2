@@ -380,7 +380,7 @@
         mouse_drop_action = "stack";
         window_shadow = "float";
         window_gap = "10";
-        focus_follows_mouse = "autofocus";
+        focus_follows_mouse = "off";
         mouse_follows_focus = "off";
       };
     };

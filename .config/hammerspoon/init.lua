@@ -339,9 +339,14 @@ Hyper:bindHotKeys({hyperKey = {{}, 'F19'}})
 
 -- Load configuration files
 package.path = os.getenv("HOME") .. "/.config/hammerspoon/?.lua;" .. package.path
-local apps = require('config.apps')
-local tags = require('config.tags')
-local positionTransitions = require('config.positions')
+Config = {}
+Config.applications = require('apps')
+Config.tags = require('tags')
+Config.positions = require('positions')
+
+local apps = Config.applications
+local tags = Config.tags
+local positionTransitions = Config.positions
 
 -- Debug function to print spaces info
 local function printSpacesInfo()
@@ -1036,11 +1041,11 @@ local chooseFromGroup = function(choice)
   -- Use bundleID as fallback name if nameForBundleID returns nil
   name = name or choice.bundleID
   
-  -- Check if we need to position the window
-  local position = choice.position
+  -- Get position from app_config or choice
+  local position = app_config and app_config.position or choice.position
   if position then
     -- Create app config for positioning
-    local app_config = {
+    local app_config_for_move = {
       app = name,
       bundleID = choice.bundleID,
       position = position
@@ -1052,7 +1057,8 @@ local chooseFromGroup = function(choice)
       -- Wait briefly for the window to be available
       hs.timer.doAfter(0.5, function()
         local pos = standardPositions[position]
-        moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h, pos.display)
+        print(string.format("Moving %s to position %s", name, position))
+        moveAndResizeWindow(app_config_for_move, pos.x, pos.y, pos.w, pos.h, pos.display)
       end)
     end
   else
