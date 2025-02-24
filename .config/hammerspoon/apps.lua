@@ -88,6 +88,7 @@ return {
   },
   {
     app = "Joplin",
+    bundleID = "net.cozic.joplin-desktop",
     position = "center_right",
     hotkey = {key = "j"},
     tags = {"utils"}
@@ -131,6 +132,7 @@ return {
   },
   {
     app = "Signal",
+    bundleID = "org.whispersystems.signal-desktop",
     position = "top_left",
     hotkey = {key = "s"},
     tags = {"comms"}
@@ -144,6 +146,7 @@ return {
   },
   {
     app = "Slack",
+    bundleID = "com.tinyspeck.slackmacgap",
     position = "bottom_right",
     hotkey = {key = "a"},
     tags = {"comms", "work"}
@@ -184,12 +187,33 @@ return {
     hotkey = {key = "w"},
     tags = {"devtools"}
   },
+  {
+    app = "Windsurf",
+    bundleID = "com.exafunction.windsurf",
+    position = "center",
+    hotkey = {key = "v"},
+    tags = {"devtools"}
+  },
   -- Urls
   {
     app = "ChatGPT",
     position = "center_right",
     isUrl = true,
-    url = "https://chat.openai.com",
+    url = "chat.openai.com",
     tags = {"urls"}
   },
+  {
+    app = "Notion",
+    position = "center_right",
+    isUrl = true,
+    url = "notion.so",
+    tags = {"urls"}
+  },
+  {
+    app = "Github",
+    position = "center_right",
+    isUrl = true,
+    url = "github.com",
+    tags = {"urls"}
+  }
 } 

@@ -17,6 +17,50 @@ local function loadSpoon(spoonName, startAfterLoad)
     end
 end
 
+-- Function to safely execute yabai command and get JSON output
+function yabaiQuery(args)
+    local cmd = "/run/current-system/sw/bin/yabai -m " .. table.concat(args, " ")
+    print("Debug - Executing yabai command:", cmd)
+    local output = hs.execute(cmd)
+    
+    if output and output ~= "" then
+        local status, result = pcall(function() return hs.json.decode(output) end)
+        if status then
+            return result
+        else
+            print("Debug - Failed to parse JSON:", output)
+            return nil
+        end
+    else
+        print("Debug - No output from yabai command")
+        return nil
+    end
+end
+
+-- Function to execute yabai command and wait for completion
+function yabaiSync(args)
+    -- Build the command string
+    local cmd = "/run/current-system/sw/bin/yabai -m " .. table.concat(args, " ")
+    print("Debug - Executing yabai command:", cmd)
+    
+    -- Execute the command
+    local output = hs.execute(cmd)
+    local success = output ~= nil
+    
+    -- For query commands, try to parse JSON
+    if success and args[1] == "query" then
+        local status, result = pcall(function() return hs.json.decode(output) end)
+        if status then
+            return true, result
+        else
+            print("Debug - Failed to parse JSON:", output)
+            return false, output
+        end
+    end
+    
+    return success, output
+end
+
 -- Load required Spoons
 Hyper = loadSpoon('Hyper')
 if not Hyper then
@@ -102,6 +146,50 @@ print("Number of screens detected:", numScreens)
 
 -- Function to update standardPositions based on number of screens
 local function updateStandardPositions()
+    -- Get all screens and sort them by x position to ensure consistent numbering
+    local allScreens = hs.screen.allScreens()
+    table.sort(allScreens, function(a, b) 
+        return a:frame().x < b:frame().x
+    end)
+    
+    -- Update global screen count
+    numScreens = #allScreens
+    
+    -- Debug information about screens
+    print("\n=== Screen Configuration Update ===")
+    print("Number of screens detected:", numScreens)
+    for i, screen in ipairs(allScreens) do
+        local frame = screen:frame()
+        print(string.format("Screen %d: %s (ID: %s)", 
+            i,
+            screen:name(),
+            screen:id()
+        ))
+        print(string.format("  Frame: x=%d, y=%d, w=%d, h=%d",
+            frame.x, frame.y, frame.w, frame.h
+        ))
+    end
+    
+    -- Get yabai display information
+    local yabai_displays = yabaiQuery({"query", "--displays"})
+    if yabai_displays then
+        print("\nYabai Display Information:")
+        for _, display in ipairs(yabai_displays) do
+            print(string.format("Display %d: %dx%d at (%d,%d)", 
+                display.index,
+                display.frame.w,
+                display.frame.h,
+                display.frame.x,
+                display.frame.y
+            ))
+        end
+    end
+    
+    -- Determine which screen is the main/primary display
+    local mainScreen = hs.screen.primaryScreen()
+    print("\nPrimary Screen:", mainScreen:name())
+    
+    -- Update standardPositions based on screen configuration
     standardPositions = {
         -- External display (display 2) positions when in dual screen mode
         center = {x = 0.2, y = 0, w = 0.6, h = 1, display = numScreens > 1 and 2 or 1},
@@ -118,66 +206,98 @@ local function updateStandardPositions()
         main_right = {x = 0.5, y = 0, w = 0.5, h = 1, display = 1}
     }
     
-    -- Print current screen configuration
-    print("=== Screen Configuration Updated ===")
-    print("Number of screens:", numScreens)
-    print("Standard positions reconfigured for " .. (numScreens > 1 and "dual" or "single") .. " screen mode")
-    print("================================")
+    -- Print final configuration
+    print("\nStandard Positions Configuration:")
+    print("Using " .. (numScreens > 1 and "dual" or "single") .. " screen mode")
+    for pos_name, pos in pairs(standardPositions) do
+        print(string.format("  %s: display=%d, x=%.2f, y=%.2f, w=%.2f, h=%.2f",
+            pos_name, pos.display, pos.x, pos.y, pos.w, pos.h
+        ))
+    end
+    print("================================\n")
+    
+    -- Notify user of screen configuration
+    hs.alert.show(string.format(
+        "Screen Configuration Updated\n%d display%s detected",
+        numScreens,
+        numScreens > 1 and "s" or ""
+    ))
 end
 
--- Initialize standardPositions
-updateStandardPositions()
-
--- Function to safely execute yabai command and get JSON output
-function yabaiQuery(args)
-    local cmd = "/run/current-system/sw/bin/yabai -m " .. table.concat(args, " ")
-    print("Debug - Executing yabai command:", cmd)
-    local output = hs.execute(cmd)
+-- Initialize screen watcher with error handling
+local screenWatcher = hs.screen.watcher.new(function()
+    print("\n=== Screen Change Detected ===")
     
-    if output and output ~= "" then
-        local status, result = pcall(function() return hs.json.decode(output) end)
-        if status then
-            return result
-        else
-            print("Debug - Failed to parse JSON:", output)
-            return nil
-        end
+    -- Get current screen state
+    local screens = hs.screen.allScreens()
+    local newScreenCount = #screens
+    
+    -- Check if screen count actually changed
+    if newScreenCount ~= numScreens then
+        print(string.format("Screen count changed: %d -> %d", numScreens, newScreenCount))
+        
+        -- Wait a moment for displays to settle
+        hs.timer.doAfter(1, function()
+            -- Update positions and configuration
+            updateStandardPositions()
+            
+            -- Get yabai display configuration
+            local displays = yabaiQuery({"query", "--displays"})
+            if displays then
+                -- Focus the appropriate display
+                local targetDisplay = newScreenCount > numScreens and newScreenCount or 1
+                
+                -- Force a yabai display update
+                print("Focusing display:", targetDisplay)
+                yabaiSync({"display", "--focus", tostring(targetDisplay)})
+                
+                -- Update spaces configuration
+                hs.timer.doAfter(0.5, function()
+                    for _, display in ipairs(displays) do
+                        if display.index == targetDisplay then
+                            local firstSpace = display.spaces[1]
+                            if firstSpace then
+                                print("Focusing space", firstSpace)
+                                yabaiSync({"space", "--focus", tostring(firstSpace)})
+                            end
+                        end
+                    end
+                    
+                    -- Reflow windows if needed
+                    if newScreenCount > numScreens then
+                        hs.timer.doAfter(0.5, function()
+                            yabaiSync({"space", "--balance"})
+                        end)
+                    end
+                end)
+            end
+        end)
     else
-        print("Debug - No output from yabai command")
-        return nil
+        print("Screen count unchanged:", numScreens)
     end
+end)
+
+-- Start screen watcher with error handling
+local status, err = pcall(function()
+    screenWatcher:start()
+end)
+
+if not status then
+    print("Error starting screen watcher:", err)
+    hs.alert.show("Failed to start screen watcher")
+else
+    print("Screen watcher started successfully")
 end
 
--- Function to execute yabai command and wait for completion
-function yabaiSync(args)
-    -- Build the command string
-    local cmd = "/run/current-system/sw/bin/yabai -m " .. table.concat(args, " ")
-    print("Debug - Executing yabai command:", cmd)
-    
-    -- Execute the command
-    local output = hs.execute(cmd)
-    local success = output ~= nil
-    
-    -- For query commands, try to parse JSON
-    if success and args[1] == "query" then
-        local status, result = pcall(function() return hs.json.decode(output) end)
-        if status then
-            return true, result
-        else
-            print("Debug - Failed to parse JSON:", output)
-            return false, output
-        end
-    end
-    
-    return success, output
-end
+-- Initial screen configuration
+updateStandardPositions()
 
 -- Function to focus a window by app name
 local function focusWindowByApp(app_name)
-  -- For Zoom, specifically target the main window
+  -- For Zoom, match any Zoom window
   if app_name == "zoom.us" then
       local cmd = "/run/current-system/sw/bin/yabai -m query --windows | " ..
-                 "jq '.[] | select(.app==\"zoom.us\" and .title==\"Zoom Meeting\") | .id'"
+                 "jq '.[] | select(.app==\"zoom.us\") | .id'"
       local window_id = hs.execute(cmd):gsub("%s+", "")
       print(string.format("%s window ID for focus:", app_name), window_id)
       if window_id and window_id ~= "" then
@@ -437,8 +557,15 @@ local function buildWindowQuery(app_config)
     
     -- Handle Zoom's special case
     if app_name == "zoom.us" then
-        return "/run/current-system/sw/bin/yabai -m query --windows | " ..
-               "jq '.[] | select(.app==\"zoom.us\" and .title==\"Zoom Meeting\") | .id'"
+        -- For Zoom Meeting windows, use specific query
+        if app_config.title and app_config.title:match("Zoom Meeting") then
+            return "/run/current-system/sw/bin/yabai -m query --windows | " ..
+                   "jq '.[] | select(.app==\"zoom.us\" and .title | contains(\"Zoom Meeting\")) | .id'"
+        else
+            -- For other Zoom windows, match any Zoom window
+            return "/run/current-system/sw/bin/yabai -m query --windows | " ..
+                   "jq '.[] | select(.app==\"zoom.us\") | .id'"
+        end
     end
     
     -- Handle PWAs
@@ -571,6 +698,24 @@ end
 
 -- Function to move and resize a window using yabai with Hammerspoon fallback
 local function moveAndResizeWindow(app_config, x, y, w, h, display_num)
+  -- For Zoom Meeting windows, force top_right position
+  if app_config.app == "zoom.us" then
+      -- Check if this is a meeting window
+      local window_title = hs.execute(string.format(
+          "/run/current-system/sw/bin/yabai -m query --windows | " ..
+          "jq -r '.[] | select(.app==\"zoom.us\") | .title'"
+      ))
+      if window_title and window_title:match("Zoom Meeting") then
+          print("Zoom Meeting window detected, forcing top_right position")
+          local pos = standardPositions["top_right"]
+          x = pos.x
+          y = pos.y
+          w = pos.w
+          h = pos.h
+          display_num = pos.display
+      end
+  end
+
   -- Ensure we have a valid display number
   display_num = display_num or 2  -- Default to external display if not specified
   print(string.format("Moving window for app '%s' to display %d", app_config.app, display_num))
@@ -1001,13 +1146,12 @@ end)
 local chooseFromGroup = function(choice)
   if not choice then return end
   
-  -- Check if the bundleID is actually a URL
-  -- More precise URL detection: must contain a dot and not be a known bundle ID pattern
+  -- Check if the choice is a URL
   local isUrl = choice.isUrl
   if isUrl then
-    -- It's a URL, use jumpOrOpen
-    print(string.format("Debug - Opening URL: %s", choice.bundleID))
-    jumpOrOpen(choice.bundleID)
+    -- Use the url field instead of bundleID for URLs
+    print(string.format("Debug - Opening URL: %s", choice.url))
+    jumpOrOpen(choice.url)
     return
   end
   
@@ -1145,7 +1289,7 @@ local hyperGroup = function(key, group, options)
                 -- Create the choice entry
                 local choice = {
                     text = name,
-                    subText = isPWA and app_config.app or identifier,  -- Show app name for PWAs, identifier for others
+                    subText = isPWA and app_config.app or isUrl and app_config.url or identifier,  -- Show app name for PWAs, URL for URLs, identifier for others
                     image = image,
                     bundleID = identifier,  -- Keep original identifier
                     key = key,
@@ -1153,6 +1297,8 @@ local hyperGroup = function(key, group, options)
                     position = position or app_config.position,  -- Use group position or app-specific position
                     hotkey = name:sub(1,1):lower(),  -- Use first letter as hotkey
                     isPWA = isPWA,  -- Include PWA status
+                    isUrl = isUrl,  -- Include URL status
+                    url = app_config.url,  -- Include URL for URL entries
                     app = app_config.app  -- Include app name for PWAs
                 }
                 
