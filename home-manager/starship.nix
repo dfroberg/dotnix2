@@ -97,7 +97,15 @@
               output=$(wakatime-cli --today --output json --verbose 2>/tmp/wakatime.log)
               if [ -n "$output" ]; then
                 # Shorten the output by turning 󰔛 17 mins Coding, 2 mins Browsing, 28 secs Meeting into 󰔛 17m Code, 2m Learn, 28s Meet
-                echo "$output" | jq -r '.text // .grand_total.text // "Processing..."' 2>/dev/null | sed 's/,//g; s/ min\(s\)\? /m /g; s/ sec\(s\)\? /s /g; s/ hour\(s\)\? /h /g; s/ Coding/ 󰅩/g; s/ Browsing/ 󰈈/g; s/ Meeting/ 󰋎/g' || echo "No data"
+                echo "$output" | jq -r '.text // .grand_total.text // "Processing..."' 2>/dev/null | \
+                sed -E 's/([0-9]+) (hour|hr)(s)? ([0-9]+) min(s)?/\1h\4m/g; 
+                        s/([0-9]+) min(s)?/\1m/g; 
+                        s/([0-9]+) sec(s)?/\1s/g; 
+                        s/([0-9]+) (hour|hr)(s)?/\1h/g; 
+                        s/ Coding/ 󰅩 /g; 
+                        s/ Browsing/ 󰈈 /g; 
+                        s/ Meeting/ 󰋎 /g; 
+                        s/,//g' || echo "No data"
               else
                 echo "$(cat /tmp/wakatime.log | tail -n 1)"
               fi
