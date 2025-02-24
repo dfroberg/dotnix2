@@ -7,7 +7,7 @@
     settings = {
       command_timeout = 300000;  # 5 minutes in milliseconds
       format = ''
-        [╭─](bold blue) $directory$direnv$git_branch$git_status$kubernetes$nix_shell$terraform$aws$python$fill$custom
+        [╭─](bold blue) $directory$direnv$git_branch$git_status$kubernetes$nix_shell$terraform$aws$python$fill$custom[─](bold blue)
         [╰─](bold blue) $character'';
 
       directory = {
@@ -73,6 +73,7 @@
           "poetry.lock"
           "Pipfile"
           ".python-version"
+          "uv.lock"
         ];
         detect_folders = [".venv" "venv" ".tox"];
         version_format = "v\${raw}";
@@ -96,7 +97,7 @@
               output=$(wakatime-cli --today --output json --verbose 2>/tmp/wakatime.log)
               if [ -n "$output" ]; then
                 # Shorten the output by turning 󰔛 17 mins Coding, 2 mins Browsing, 28 secs Meeting into 󰔛 17m Code, 2m Learn, 28s Meet
-                echo "$output" | jq -r '.text // .grand_total.text // "Processing..."' 2>/dev/null | sed 's/ min\(s\)\?/m/g; s/ sec\(s\)\?/s/g; s/ hour\(s\)\?/h/g; s/Coding/Code/; s/Browsing/Learn/; s/Meeting/Meet/' || echo "No data"
+                echo "$output" | jq -r '.text // .grand_total.text // "Processing..."' 2>/dev/null | sed 's/,//g; s/ min\(s\)\? /m /g; s/ sec\(s\)\? /s /g; s/ hour\(s\)\? /h /g; s/ Coding/ 󰅩/g; s/ Browsing/ 󰈈/g; s/ Meeting/ 󰋎/g' || echo "No data"
               else
                 echo "$(cat /tmp/wakatime.log | tail -n 1)"
               fi
@@ -117,7 +118,10 @@
         symbol = "󱁢 ";  # nf-md-terraform
         style = "bold 105";
         detect_files = ["main.tf" ".terraform" "terraform.tf" "terraform.tfstate"];
-        detect_folders = [".terraform"];
+        detect_folders = [
+          ".terraform"
+          ".terragrunt"
+          ];
         disabled = false;
       };
 
