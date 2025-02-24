@@ -7,7 +7,7 @@
     settings = {
       command_timeout = 300000;  # 5 minutes in milliseconds
       format = ''
-        [╭─](bold blue) $directory$direnv$git_branch$git_status$kubernetes$nix_shell$terraform$aws$python$wakatime
+        [╭─](bold blue) $directory$direnv$git_branch$git_status$kubernetes$nix_shell$terraform$aws$python$fill$custom
         [╰─](bold blue) $character'';
 
       directory = {
@@ -95,7 +95,8 @@
             if [ -f ~/.wakatime.cfg ]; then
               output=$(wakatime-cli --today --output json --verbose 2>/tmp/wakatime.log)
               if [ -n "$output" ]; then
-                echo "$output" | jq -r '.text // .grand_total.text // "Processing..."' 2>/dev/null || echo "No data"
+                # Shorten the output by turning 󰔛 17 mins Coding, 2 mins Browsing, 28 secs Meeting into 󰔛 17m Code, 2m Learn, 28s Meet
+                echo "$output" | jq -r '.text // .grand_total.text // "Processing..."' 2>/dev/null | sed 's/ min\(s\)\?/m/g; s/ sec\(s\)\?/s/g; s/ hour\(s\)\?/h/g; s/Coding/Code/; s/Browsing/Learn/; s/Meeting/Meet/' || echo "No data"
               else
                 echo "$(cat /tmp/wakatime.log | tail -n 1)"
               fi
@@ -134,6 +135,12 @@
           "default" = "def";
           # Add more profile aliases as needed
         };
+      };
+
+      # Add the fill module configuration
+      fill = {
+        symbol = "─";
+        style = "bold blue";
       };
     };
   };
