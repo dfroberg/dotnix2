@@ -929,14 +929,36 @@ local function getCurrentPosition(win)
       if output and output ~= "" then
           local status, window_info = pcall(function() return hs.json.decode(output) end)
           if status and window_info then
-              -- Use yabai's frame information
-              frame = window_info.frame
-              screenFrame = {
-                  x = 0,
-                  y = 0,
-                  w = screen:frame().w,
-                  h = screen:frame().h
-              }
+              -- Get display info to normalize coordinates
+              local displays = yabaiQuery({"query", "--displays"})
+              local display_info = nil
+              if displays then
+                  for _, d in ipairs(displays) do
+                      if d.index == window_info.display then
+                          display_info = d
+                          break
+                      end
+                  end
+              end
+              
+              if display_info then
+                  -- Normalize coordinates relative to the display
+                  frame = {
+                      x = window_info.frame.x - display_info.frame.x,
+                      y = window_info.frame.y - display_info.frame.y,
+                      w = window_info.frame.w,
+                      h = window_info.frame.h
+                  }
+                  screenFrame = {
+                      x = 0,
+                      y = 0,
+                      w = display_info.frame.w,
+                      h = display_info.frame.h
+                  }
+                  print(string.format("Display frame: x=%d, y=%d, w=%d, h=%d",
+                      display_info.frame.x, display_info.frame.y,
+                      display_info.frame.w, display_info.frame.h))
+              end
           else
               print("Failed to parse window info JSON:", output)
           end
@@ -944,41 +966,76 @@ local function getCurrentPosition(win)
   end
   
   -- Convert absolute coordinates to relative
-  local relX = (frame.x - screenFrame.x) / screenFrame.w
-  local relY = (frame.y - screenFrame.y) / screenFrame.h
+  local relX = frame.x / screenFrame.w
+  local relY = frame.y / screenFrame.h
   local relW = frame.w / screenFrame.w
   local relH = frame.h / screenFrame.h
   
   -- Add debug output
-  print(string.format("Window position - x: %.3f, y: %.3f, w: %.3f, h: %.3f, screen: %d", 
+  print("\n=== Position Detection ===")
+  print(string.format("Normalized window frame: x=%.1f, y=%.1f, w=%.1f, h=%.1f", 
+      frame.x, frame.y, frame.w, frame.h))
+  print(string.format("Screen frame: x=%.1f, y=%.1f, w=%.1f, h=%.1f", 
+      screenFrame.x, screenFrame.y, screenFrame.w, screenFrame.h))
+  print(string.format("Relative position: x=%.3f, y=%.3f, w=%.3f, h=%.3f, screen: %d", 
       relX, relY, relW, relH, screenIndex))
   
+  -- Print all standard positions for comparison
+  print("\nComparing with standard positions:")
+  for pos_name, pos in pairs(standardPositions) do
+      if pos.display == screenIndex then
+          print(string.format("  %s: x=%.3f, y=%.3f, w=%.3f, h=%.3f", 
+              pos_name, pos.x, pos.y, pos.w, pos.h))
+          -- Print difference metrics
+          local xDiff = math.abs(pos.x - relX)
+          local yDiff = math.abs(pos.y - relY)
+          local wDiff = math.abs(pos.w - relW)
+          local hDiff = math.abs(pos.h - relH)
+          local totalDiff = xDiff + yDiff + wDiff + hDiff
+          print(string.format("    Difference: x=%.3f, y=%.3f, w=%.3f, h=%.3f, total=%.3f",
+              xDiff, yDiff, wDiff, hDiff, totalDiff))
+      end
+  end
+  
   -- Find matching standard position with increased tolerance
+  local bestMatch = nil
+  local smallestDiff = math.huge
+  
   for pos_name, pos in pairs(standardPositions) do
       -- Check if position matches current display
       if pos.display == screenIndex then
+          -- Calculate total difference
+          local xDiff = math.abs(pos.x - relX)
+          local yDiff = math.abs(pos.y - relY)
+          local wDiff = math.abs(pos.w - relW)
+          local hDiff = math.abs(pos.h - relH)
+          local totalDiff = xDiff + yDiff + wDiff + hDiff
+          
           -- Use larger tolerance for position matching
-          if math.abs(pos.x - relX) < 0.1 and
-             math.abs(pos.y - relY) < 0.1 and
-             math.abs(pos.w - relW) < 0.1 and
-             math.abs(pos.h - relH) < 0.1 then
-              print("Matched position:", pos_name)
-              return pos_name
+          if totalDiff < smallestDiff and totalDiff < 0.8 then  -- Increased tolerance
+              smallestDiff = totalDiff
+              bestMatch = pos_name
           end
       end
   end
   
-  -- If no match found, return default based on current display
-  if screenIndex == 1 then
-      return "main_center"
-  else
-      return "center"
+  if bestMatch then
+      print("Best matching position:", bestMatch, "with difference:", smallestDiff)
+      return bestMatch
   end
+  
+  -- If no match found, return default based on current display
+  local default = screenIndex == 1 and "main_center" or "center"
+  print("No close match found, using default:", default)
+  print("===========================\n")
+  return default
 end
 
 -- Function to move window in specified direction
 local function moveWindowInDirection(direction)
-  print("moveWindowInDirection called with direction:", direction)
+  print("\n=== Moving Window in Direction ===")
+  print("Direction:", direction)
+  
   local win = hs.window.focusedWindow()
   if win then
       print("Found focused window:", win:title())
@@ -987,25 +1044,39 @@ local function moveWindowInDirection(direction)
       
       local currentPos = getCurrentPosition(win)
       print("Current position:", currentPos)
+      
+      -- Debug available transitions
+      print("\nAvailable transitions for direction", direction)
+      for pos, nextPos in pairs(positionTransitions[direction]) do
+          print(string.format("  %s -> %s", pos, nextPos))
+      end
+      
       local nextPos = positionTransitions[direction] and positionTransitions[direction][currentPos]
-      print("Next position:", nextPos)
+      print("\nCalculated next position:", nextPos)
       
       if nextPos then
           local pos = standardPositions[nextPos]
           if pos then
-              print(string.format("Moving from %s to %s on display %d", 
+              print(string.format("\nMoving from %s to %s on display %d", 
                   currentPos, nextPos, pos.display))
+              print(string.format("New coordinates: x=%.2f, y=%.2f, w=%.2f, h=%.2f", 
+                  pos.x, pos.y, pos.w, pos.h))
               
               local app_config = {
                   app = win:application():name(),
                   title = win:title()
               }
               moveAndResizeWindow(app_config, pos.x, pos.y, pos.w, pos.h, pos.display)
+          else
+              print("Error: No standard position found for", nextPos)
           end
+      else
+          print("No transition defined for", currentPos, "in direction", direction)
       end
   else
       print("No focused window found")
   end
+  print("===================================\n")
 end
 
 -- Function to position currently focused window in a standard position
