@@ -533,17 +533,22 @@
     activationScripts = {
       postActivation.text = ''
         # Load PAM module for sudo Touch ID authentication
-        sudo sed -i "" "/pam_tid.so/d" /etc/pam.d/sudo
-        sudo sed -i "" '1a\
+        # Check if pam_tid.so is already configured
+        if ! grep -q "pam_tid.so" /etc/pam.d/sudo; then
+          sudo sed -i "" "/pam_tid.so/d" /etc/pam.d/sudo
+          sudo sed -i "" '1a\
 auth       sufficient     pam_tid.so
 ' /etc/pam.d/sudo
+        fi
 
         # Configure Karabiner-Elements
-        echo "Configuring Karabiner-Elements..."
-        mkdir -p ~/.config/karabiner/assets/complex_modifications/
-        cat > ~/.config/karabiner/assets/complex_modifications/1_hyper.json << 'EOF'
+        KARABINER_USERS="/Users/dfroberg /var/root"
+        
+        # Create temp file with rules content
+        TEMP_FILE=''$(mktemp)
+        cat > "''$TEMP_FILE" << 'EOF'
 {
-    "description": "Section (§) to Hyper Key",
+    "description": "Section (§) to a Hyper Key",
     "manipulators": [
         {
             "from": {
@@ -570,11 +575,58 @@ auth       sufficient     pam_tid.so
     ]
 }
 EOF
+
+        # Loop through each user directory
+        for USER_HOME in ''${KARABINER_USERS}; do
+          KARABINER_CONFIG_DIR="''${USER_HOME}/.config/karabiner"
+          KARABINER_FILE="''${KARABINER_CONFIG_DIR}/karabiner.json"
+          echo "Configuring Karabiner-Elements at ''${KARABINER_FILE}"
+
+          # Ensure directory exists
+          mkdir -p "''$KARABINER_CONFIG_DIR"
+
+          # Create default config if it doesn't exist
+          if [ ! -f "''$KARABINER_FILE" ]; then
+            echo '{"profiles":[{"name":"Default profile","selected":true,"virtual_hid_keyboard":{"keyboard_type_v2":"ansi"},"complex_modifications":{"rules":[]}}]}' > "''$KARABINER_FILE"
+          fi
+
+          # Update the rules using jq
+          RULES=''$(cat "''$TEMP_FILE")
+          jq --arg rules "''$RULES" '
+            .profiles[0].complex_modifications.rules = (
+              if (.profiles[0].complex_modifications.rules | length > 0) then
+                (.profiles[0].complex_modifications.rules | map(
+                  if .description == "Section (§) to a Hyper Key" then
+                    ($rules | fromjson)
+                  else
+                    .
+                  end
+                ))
+              else
+                [($rules | fromjson)]
+              end
+            )
+          ' "''$KARABINER_FILE" > "''${KARABINER_FILE}.tmp" && mv "''${KARABINER_FILE}.tmp" "''$KARABINER_FILE"
+
+          # Ensure configuration is loaded
+          KARABINER_CLI="/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli"
+          if [ -x "''${KARABINER_CLI}" ]; then
+            # Select the default profile to ensure changes are applied
+            "''${KARABINER_CLI}" --select-profile 'Default profile' || true
+            # Copy to system default to ensure persistence
+            "''${KARABINER_CLI}" --copy-current-profile-to-system-default-profile || true
+          else
+            echo "Warning: karabiner_cli not found at ''${KARABINER_CLI}"
+          fi
+        done
+
+        rm "''$TEMP_FILE"
+
         # Add Warp to admin group
-        echo "Adding Warp to admin group..."
-        sudo security authorizationdb write system.privilege.admin allow
-        sudo security authorizationdb write system.preferences allow
-        sudo security authorizationdb write com.apple.system-extensions.admin allow
+        # echo "Adding Warp to admin group..."
+        # sudo security authorizationdb write system.privilege.admin allow
+        # sudo security authorizationdb write system.preferences allow
+        # sudo security authorizationdb write com.apple.system-extensions.admin allow
 
         # Disable automatic space rearrangement
         /usr/bin/defaults write com.apple.dock "mru-spaces" -bool false
@@ -599,7 +651,20 @@ EOF
     };
     sudo = {
       extraConfig = ''
+        # Yabai and darwin-rebuild
         %admin ALL=(root) NOPASSWD: /run/current-system/sw/bin/yabai --load-sa
+        %admin ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+
+        # System configuration commands
+        %admin ALL=(root) NOPASSWD: /usr/bin/sed -i "" "/pam_tid.so/d" /etc/pam.d/sudo
+        %admin ALL=(root) NOPASSWD: /usr/bin/sed -i "" "1a*" /etc/pam.d/sudo
+        %admin ALL=(root) NOPASSWD: /usr/bin/security authorizationdb write system.privilege.admin allow
+        %admin ALL=(root) NOPASSWD: /usr/bin/security authorizationdb write system.preferences allow
+        %admin ALL=(root) NOPASSWD: /usr/bin/security authorizationdb write com.apple.system-extensions.admin allow
+
+        # Homebrew and Application setup
+        %admin ALL=(root) NOPASSWD: /opt/homebrew/bin/brew
+
       '';
     };
   };
