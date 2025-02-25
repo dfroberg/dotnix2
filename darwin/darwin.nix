@@ -152,58 +152,58 @@
         # Function to ensure we have exactly 6 spaces
         setup_spaces() {
           # Get displays
-          local displays=$(yabai -m query --displays)
-          local main_display=$(echo "$displays" | jq -r '.[] | select(.index == 1) | .uuid')
-          local second_display=$(echo "$displays" | jq -r '.[] | select(.index == 2) | .uuid')
+          local displays=''$(yabai -m query --displays)
+          local main_display=''$(echo "''${displays}" | jq -r '.[] | select(.index == 1) | .uuid')
+          local second_display=''$(echo "''${displays}" | jq -r '.[] | select(.index == 2) | .uuid')
           
-          if [ -n "$main_display" ]; then
+          if [ -n "''${main_display}" ]; then
             # Get spaces on main display
-            local main_spaces=$(yabai -m query --spaces | jq -r ".[] | select(.display == \"$main_display\") | .index")
-            local main_count=$(echo "$main_spaces" | wc -l)
+            local main_spaces=''$(yabai -m query --spaces | jq -r ".[] | select(.display == \"''${main_display}\") | .index")
+            local main_count=''$(echo "''${main_spaces}" | wc -l)
             
             # Ensure exactly 1 space on main display
-            while [ "$main_count" -lt 1 ]; do
+            while [ "''${main_count}" -lt 1 ]; do
               yabai -m space --create
-              main_count=$((main_count + 1))
+              main_count=''$((main_count + 1))
               sleep 0.5
             done
           fi
           
-          if [ -n "$second_display" ]; then
+          if [ -n "''${second_display}" ]; then
             # Get spaces on second display
-            local second_spaces=$(yabai -m query --spaces | jq -r ".[] | select(.display == \"$second_display\") | .index")
-            local second_count=$(echo "$second_spaces" | wc -l)
+            local second_spaces=''$(yabai -m query --spaces | jq -r ".[] | select(.display == \"''${second_display}\") | .index")
+            local second_count=''$(echo "''${second_spaces}" | wc -l)
             
             # Ensure exactly 4 spaces on second display
-            while [ "$second_count" -lt 4 ]; do
+            while [ "''${second_count}" -lt 4 ]; do
               yabai -m space --create
-              second_count=$((second_count + 1))
+              second_count=''$((second_count + 1))
               sleep 0.5
             done
           fi
           
           # Get final space list for labeling
-          spaces=$(yabai -m query --spaces | jq -r '.[].index')
+          spaces=''$(yabai -m query --spaces | jq -r '.[].index')
           
           # Label spaces based on display
           i=1
-          for space in $spaces; do
+          for space in ''${spaces}; do
             # Get display for this space
-            local space_display=$(yabai -m query --spaces --space $space | jq -r '.display')
+            local space_display=''$(yabai -m query --spaces --space ''${space} | jq -r '.display')
             
-            if [ "$space_display" = "$main_display" ]; then
+            if [ "''${space_display}" = "''${main_display}" ]; then
               # Label main display space
-              yabai -m space $space --label main
-            elif [ "$space_display" = "$second_display" ]; then
+              yabai -m space ''${space} --label main
+            elif [ "''${space_display}" = "''${second_display}" ]; then
               # Label second display spaces
-              case $i in
-                1) yabai -m space $space --label code ;;
-                2) yabai -m space $space --label docs ;;
-                3) yabai -m space $space --label chat ;;
-                4) yabai -m space $space --label social ;;
+              case ''${i} in
+                1) yabai -m space ''${space} --label code ;;
+                2) yabai -m space ''${space} --label docs ;;
+                3) yabai -m space ''${space} --label chat ;;
+                4) yabai -m space ''${space} --label social ;;
               esac
             fi
-            i=$((i + 1))
+            i=''$((i + 1))
           done
         }
         
@@ -300,37 +300,37 @@
 
         function reposition_windows() {
             # First ensure all windows are on the right display and space
-            windows=$(yabai -m query --windows)
+            windows=''$(yabai -m query --windows)
             
             # Get window IDs regardless of current space/display
-            signal_id=$(echo "$windows" | jq '.[] | select(.app=="Signal") | .id')
-            warp_id=$(echo "$windows" | jq '.[] | select(.app=="Warp") | .id')
-            cursor_id=$(echo "$windows" | jq '.[] | select(.app=="Cursor") | .id')
-            youtube_id=$(echo "$windows" | jq '.[] | select(.app=="YouTube") | .id')
+            signal_id=''$(echo "''${windows}" | jq '.[] | select(.app=="Signal") | .id')
+            warp_id=''$(echo "''${windows}" | jq '.[] | select(.app=="Warp") | .id')
+            cursor_id=''$(echo "''${windows}" | jq '.[] | select(.app=="Cursor") | .id')
+            youtube_id=''$(echo "''${windows}" | jq '.[] | select(.app=="YouTube") | .id')
 
-            if [ -n "$signal_id" ] && [ -n "$warp_id" ] && [ -n "$cursor_id" ] && [ -n "$youtube_id" ]; then
+            if [ -n "''${signal_id}" ] && [ -n "''${warp_id}" ] && [ -n "''${cursor_id}" ] && [ -n "''${youtube_id}" ]; then
                 echo "Found all windows, preparing to move..."
                 
                 # First ensure all windows are unmanaged
-                for id in $signal_id $warp_id $cursor_id $youtube_id; do
+                for id in ''${signal_id} ''${warp_id} ''${cursor_id} ''${youtube_id}; do
                     # Check if window is managed
-                    is_managed=$(yabai -m query --windows --window $id | jq '."is-floating" | not')
-                    if [ "$is_managed" = "true" ]; then
-                        yabai -m window $id --toggle float
+                    is_managed=''$(yabai -m query --windows --window ''${id} | jq '."is-floating" | not')
+                    if [ "''${is_managed}" = "true" ]; then
+                        yabai -m window ''${id} --toggle float
                     fi
                 done
 
                 # Then move windows to correct display/space
-                for id in $signal_id $warp_id $cursor_id $youtube_id; do
+                for id in ''${signal_id} ''${warp_id} ''${cursor_id} ''${youtube_id}; do
                     # First move to display 2
-                    current_display=$(yabai -m query --windows --window $id | jq '.display')
-                    if [ "$current_display" != "2" ]; then
-                        yabai -m window $id --display 2
+                    current_display=''$(yabai -m query --windows --window ''${id} | jq '.display')
+                    if [ "''${current_display}" != "2" ]; then
+                        yabai -m window ''${id} --display 2
                     fi
                     # Then move to space 4
-                    current_space=$(yabai -m query --windows --window $id | jq '.space')
-                    if [ "$current_space" != "4" ]; then
-                        yabai -m window $id --space 4
+                    current_space=''$(yabai -m query --windows --window ''${id} | jq '.space')
+                    if [ "''${current_space}" != "4" ]; then
+                        yabai -m window ''${id} --space 4
                     fi
                 done
 
@@ -338,34 +338,34 @@
                 sleep 0.5
                 
                 # Get display dimensions for positioning
-                display_info=$(yabai -m query --displays | jq '.[] | select(.index == 2)')
-                display_width=$(echo "$display_info" | jq '.frame.w | floor')
-                display_height=$(echo "$display_info" | jq '.frame.h | floor')
-                display_x=$(echo "$display_info" | jq '.frame.x | floor')
-                display_y=$(echo "$display_info" | jq '.frame.y | floor')
+                display_info=''$(yabai -m query --displays | jq '.[] | select(.index == 2)')
+                display_width=''$(echo "''${display_info}" | jq '.frame.w | floor')
+                display_height=''$(echo "''${display_info}" | jq '.frame.h | floor')
+                display_x=''$(echo "''${display_info}" | jq '.frame.x | floor')
+                display_y=''$(echo "''${display_info}" | jq '.frame.y | floor')
                 
                 # Calculate window positions and sizes
-                left_width=$(( display_width / 5 ))
-                middle_width=$(( display_width * 3 / 5 ))
-                right_width=$(( display_width / 5 ))
-                half_height=$(( display_height / 2 ))
+                left_width=''$((display_width / 5))
+                middle_width=''$((display_width * 3 / 5))
+                right_width=''$((display_width / 5))
+                half_height=''$((display_height / 2))
                 
                 # Position Signal at top-left
-                yabai -m window $signal_id --move abs:$((display_x)):$((display_y))
-                yabai -m window $signal_id --resize abs:$left_width:$half_height
+                yabai -m window ''${signal_id} --move abs:''${display_x}:''${display_y}
+                yabai -m window ''${signal_id} --resize abs:''${left_width}:''${half_height}
 
                 # Position Warp below Signal
-                yabai -m window $warp_id --move abs:$((display_x)):$((display_y + half_height))
-                yabai -m window $warp_id --resize abs:$left_width:$half_height
+                yabai -m window ''${warp_id} --move abs:''${display_x}:''$((display_y + half_height))
+                yabai -m window ''${warp_id} --resize abs:''${left_width}:''${half_height}
 
                 # Position Cursor in middle (larger space)
-                yabai -m window $cursor_id --move abs:$((display_x + left_width)):$((display_y))
-                yabai -m window $cursor_id --resize abs:$middle_width:$display_height
+                yabai -m window ''${cursor_id} --move abs:''$((display_x + left_width)):''${display_y}
+                yabai -m window ''${cursor_id} --resize abs:''${middle_width}:''${display_height}
 
                 # Position YouTube on right
-                right_x=$((display_x + left_width + middle_width))
-                yabai -m window $youtube_id --move abs:$right_x:$((display_y))
-                yabai -m window $youtube_id --resize abs:$right_width:$display_height
+                right_x=''$((display_x + left_width + middle_width))
+                yabai -m window ''${youtube_id} --move abs:''${right_x}:''${display_y}
+                yabai -m window ''${youtube_id} --resize abs:''${right_width}:''${display_height}
 
                 echo "Windows positioned successfully"
             else
