@@ -146,65 +146,84 @@
         # Wait for yabai to be fully started
         sleep 5
 
+        # Add logging with file output
+        yabai_log() {
+          local log_message="[$(date '+%Y-%m-%d %H:%M:%S')] [YABAI] ''$1"
+          echo "''${log_message}"
+          echo "''${log_message}" >> "/tmp/yabai_window_manager.log"
+        }
+
+        # Add error handling for yabai commands
+        yabai_cmd() {
+          yabai -m "$@" || yabai_log "Error: yabai command failed: $*"
+        }
+
+        # Function to check if window exists
+        window_exists() {
+          yabai -m query --windows --window "$1" &>/dev/null
+        }
+
+        # Check if yabai is available
+        if ! command -v yabai &> /dev/null; then
+          yabai_log "Error: yabai not found"
+          exit 1
+        fi
+
         # Configure spaces
-        echo "Setting up spaces..."
+        yabai_log "Setting up spaces..."
         
-        # Function to ensure we have exactly 6 spaces
+        # Function to work with existing spaces
         setup_spaces() {
           # Get displays
           local displays=''$(yabai -m query --displays)
           local main_display=''$(echo "''${displays}" | jq -r '.[] | select(.index == 1) | .uuid')
           local second_display=''$(echo "''${displays}" | jq -r '.[] | select(.index == 2) | .uuid')
           
-          if [ -n "''${main_display}" ]; then
-            # Get spaces on main display
-            local main_spaces=''$(yabai -m query --spaces | jq -r ".[] | select(.display == \"''${main_display}\") | .index")
-            local main_count=''$(echo "''${main_spaces}" | wc -l)
-            
-            # Ensure exactly 1 space on main display
-            while [ "''${main_count}" -lt 1 ]; do
-              yabai -m space --create
-              main_count=''$((main_count + 1))
-              sleep 0.5
-            done
-          fi
+          yabai_log "Found displays: main=''${main_display}, second=''${second_display}"
           
-          if [ -n "''${second_display}" ]; then
-            # Get spaces on second display
-            local second_spaces=''$(yabai -m query --spaces | jq -r ".[] | select(.display == \"''${second_display}\") | .index")
-            local second_count=''$(echo "''${second_spaces}" | wc -l)
-            
-            # Ensure exactly 4 spaces on second display
-            while [ "''${second_count}" -lt 4 ]; do
-              yabai -m space --create
-              second_count=''$((second_count + 1))
-              sleep 0.5
-            done
-          fi
+          # Get all spaces
+          local all_spaces=''$(yabai -m query --spaces | jq -r '.[].index')
+          yabai_log "Found spaces: ''${all_spaces}"
           
-          # Get final space list for labeling
-          spaces=''$(yabai -m query --spaces | jq -r '.[].index')
-          
-          # Label spaces based on display
+          # Label existing spaces based on display
           i=1
-          for space in ''${spaces}; do
+          for space in ''${all_spaces}; do
             # Get display for this space
             local space_display=''$(yabai -m query --spaces --space ''${space} | jq -r '.display')
             
             if [ "''${space_display}" = "''${main_display}" ]; then
               # Label main display space
-              yabai -m space ''${space} --label main
+              yabai_log "Labeling space ''${space} as main"
+              yabai -m space ''${space} --label main || yabai_log "Failed to label space ''${space}"
             elif [ "''${space_display}" = "''${second_display}" ]; then
               # Label second display spaces
               case ''${i} in
-                1) yabai -m space ''${space} --label code ;;
-                2) yabai -m space ''${space} --label docs ;;
-                3) yabai -m space ''${space} --label chat ;;
-                4) yabai -m space ''${space} --label social ;;
+                1) 
+                  yabai_log "Labeling space ''${space} as code"
+                  yabai -m space ''${space} --label code || yabai_log "Failed to label space ''${space}"
+                  ;;
+                2) 
+                  yabai_log "Labeling space ''${space} as docs"
+                  yabai -m space ''${space} --label docs || yabai_log "Failed to label space ''${space}"
+                  ;;
+                3) 
+                  yabai_log "Labeling space ''${space} as chat"
+                  yabai -m space ''${space} --label chat || yabai_log "Failed to label space ''${space}"
+                  ;;
+                4) 
+                  yabai_log "Labeling space ''${space} as social"
+                  yabai -m space ''${space} --label social || yabai_log "Failed to label space ''${space}"
+                  ;;
+                *) 
+                  yabai_log "Labeling space ''${space} as extra-''${i}"
+                  yabai -m space ''${space} --label "extra-''${i}" || yabai_log "Failed to label space ''${space}"
+                  ;;
               esac
+              i=''$((i + 1))
             fi
-            i=''$((i + 1))
           done
+          
+          yabai_log "Spaces labeled successfully"
         }
         
         # Set up spaces
@@ -214,163 +233,228 @@
         sleep 2
         
         # Basic window settings
-        yabai -m config layout bsp
-        yabai -m config window_placement second_child
-        yabai -m config split_ratio 0.50
-        yabai -m config auto_balance off
-        yabai -m config window_origin_display default
+        yabai_cmd config layout bsp
+        yabai_cmd config window_placement second_child
+        yabai_cmd config split_ratio 0.50
+        yabai_cmd config auto_balance off
+        yabai_cmd config window_origin_display default
 
         # Window opacity settings
-        yabai -m config active_window_opacity 1.0
-        yabai -m config normal_window_opacity 0.9
+        yabai_cmd config active_window_opacity 1.0
+        yabai_cmd config normal_window_opacity 0.9
 
         # Padding
-        yabai -m config top_padding    5
-        yabai -m config bottom_padding 5
-        yabai -m config left_padding   5
-        yabai -m config right_padding  5
+        yabai_cmd config top_padding    5
+        yabai_cmd config bottom_padding 5
+        yabai_cmd config left_padding   5
+        yabai_cmd config right_padding  5
 
         # Name displays using display ID (more stable than index)
-        yabai -m display 1 --label main # Built-in/Main display
-        yabai -m display 2 --label top  # External display
+        yabai_cmd display 1 --label main # Built-in/Main display
+        yabai_cmd display 2 --label top  # External display
 
         # sub-layer normal
-        yabai -m rule --add app=".*" sub-layer=normal
-
-        # South display rules
-        yabai -m rule --add app="^Spotify$" display=south space=chat
-        yabai -m rule --add app="^Joplin$" display=south space=docs
-        yabai -m rule --add app="^Obsidian$" display=south space=docs
-        yabai -m rule --add app="^Raycast$" display=south space=other
+        yabai_cmd rule --add app=".*" sub-layer=normal
 
         # Set default split type
-        yabai -m config split_type auto
+        yabai_cmd config split_type auto
 
         # Rules for unmanaged apps
-        yabai -m rule --add app="^System Settings$" manage=off
-        yabai -m rule --add app="^Calculator$" manage=off
-        yabai -m rule --add app="^Karabiner-Elements$" manage=off
-        yabai -m rule --add app="^QuickTime Player$" manage=off
-        yabai -m rule --add app="^Finder$" manage=off
-        yabai -m rule --add app="^Digital Color Meter$" manage=off
-        yabai -m rule --add app="^Activity Monitor$" manage=off
-        yabai -m rule --add app="^Path Finder$" manage=off
-        yabai -m rule --add app="^1Password$" manage=off
-        yabai -m rule --add app="^Raycast$" manage=off
-        yabai -m rule --add app="^zoom.us$" manage=off
-        yabai -m rule --add app="^Bitwarden$" manage=off
-        yabai -m rule --add app="^OBSBOT_Main$" manage=off
-        yabai -m rule --add app="^Finder$" manage=off
-        yabai -m rule --add app="^Joplin$" manage=off
-        yabai -m rule --add app="^YouTube$" manage=off
-        yabai -m rule --add app="^Signal$" manage=off
-        yabai -m rule --add app="^Google Meet$" manage=off
-        yabai -m rule --add app="^Slack$" manage=off
+        yabai_cmd rule --add app="^System Settings$" manage=off
+        yabai_cmd rule --add app="^Calculator$" manage=off
+        yabai_cmd rule --add app="^Karabiner-Elements$" manage=off
+        yabai_cmd rule --add app="^QuickTime Player$" manage=off
+        yabai_cmd rule --add app="^Finder$" manage=off
+        yabai_cmd rule --add app="^Digital Color Meter$" manage=off
+        yabai_cmd rule --add app="^Activity Monitor$" manage=off
+        yabai_cmd rule --add app="^Path Finder$" manage=off
+        yabai_cmd rule --add app="^1Password$" manage=off
+        yabai_cmd rule --add app="^Raycast$" manage=off
+        yabai_cmd rule --add app="^zoom.us$" manage=off
+        yabai_cmd rule --add app="^Bitwarden$" manage=off
+        yabai_cmd rule --add app="^OBSBOT_Main$" manage=off
+        yabai_cmd rule --add app="^Finder$" manage=off
+        yabai_cmd rule --add app="^Joplin$" manage=off
+        yabai_cmd rule --add app="^YouTube$" manage=off
+        yabai_cmd rule --add app="^Signal$" manage=off
+        yabai_cmd rule --add app="^Google Meet$" manage=off
+        yabai_cmd rule --add app="^Slack$" manage=off
         
         # Event handlers
-        yabai -m signal --add event=window_created action="yabai -m query --windows --window &> /dev/null || reposition_windows"
-        yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
-        yabai -m signal --add event=window_moved action="reposition_windows"
-        yabai -m signal --add event=window_resized action="reposition_windows"
-        yabai -m signal --add event=space_changed action="reposition_windows"
-        yabai -m signal --add event=display_changed action="reposition_windows"
-        yabai -m signal --add event=display_added action="reposition_windows"
-        yabai -m signal --add event=display_removed action="reposition_windows"
-        yabai -m signal --add event=window_focused action="reposition_windows"
-        yabai -m signal --add event=window_destroyed action="reposition_windows"
+        yabai_cmd signal --add event=window_created action="yabai -m query --windows --window \$YABAI_WINDOW_ID &>/dev/null || reposition_windows"
+        yabai_cmd signal --add event=dock_did_restart action="sudo yabai --load-sa"
+        yabai_cmd signal --add event=window_moved action="reposition_windows"
+        yabai_cmd signal --add event=window_resized action="reposition_windows"
+        yabai_cmd signal --add event=space_changed action="reposition_windows"
+        yabai_cmd signal --add event=display_changed action="reposition_windows"
+        yabai_cmd signal --add event=display_added action="reposition_windows"
+        yabai_cmd signal --add event=display_removed action="reposition_windows"
+        yabai_cmd signal --add event=window_focused action="reposition_windows"
+        yabai_cmd signal --add event=window_destroyed action="reposition_windows"
 
         # Mission control events
-        yabai -m signal --add event=mission_control_exit action='
+        yabai_cmd signal --add event=mission_control_exit action='
           yabai -m config active_window_opacity 1.0
           reposition_windows
         '
-        yabai -m signal --add event=mission_control_enter action='
+        yabai_cmd signal --add event=mission_control_enter action='
           yabai -m config normal_window_opacity 1.0
           reposition_windows
         '
 
-        # Combined rules for fixed size windows and window management
-        yabai -m rule --add app="^Signal$" manage=off space=2 sticky=off opacity=1.0
-        yabai -m rule --add app="^Google Meet$" manage=off space=2 sticky=off opacity=1.0
-        yabai -m rule --add app="^zoom.us$" manage=off space=2 sticky=off opacity=1.0
-        yabai -m rule --add app="^Slack$" manage=off space=2 sticky=off opacity=1.0
-        yabai -m rule --add app="^Warp$" manage=off space=2 sticky=off opacity=0.8
-        yabai -m rule --add app="^Cursor$" manage=off space=2 sticky=off opacity=1.0
-        yabai -m rule --add app="^YouTube$" manage=off space=2 sticky=off opacity=1.0
-
-        function reposition_windows() {
-            # First ensure all windows are on the right display and space
-            windows=''$(yabai -m query --windows)
-            
-            # Get window IDs regardless of current space/display
-            signal_id=''$(echo "''${windows}" | jq '.[] | select(.app=="Signal") | .id')
-            warp_id=''$(echo "''${windows}" | jq '.[] | select(.app=="Warp") | .id')
-            cursor_id=''$(echo "''${windows}" | jq '.[] | select(.app=="Cursor") | .id')
-            youtube_id=''$(echo "''${windows}" | jq '.[] | select(.app=="YouTube") | .id')
-
-            if [ -n "''${signal_id}" ] && [ -n "''${warp_id}" ] && [ -n "''${cursor_id}" ] && [ -n "''${youtube_id}" ]; then
-                echo "Found all windows, preparing to move..."
-                
-                # First ensure all windows are unmanaged
-                for id in ''${signal_id} ''${warp_id} ''${cursor_id} ''${youtube_id}; do
-                    # Check if window is managed
-                    is_managed=''$(yabai -m query --windows --window ''${id} | jq '."is-floating" | not')
-                    if [ "''${is_managed}" = "true" ]; then
-                        yabai -m window ''${id} --toggle float
-                    fi
-                done
-
-                # Then move windows to correct display/space
-                for id in ''${signal_id} ''${warp_id} ''${cursor_id} ''${youtube_id}; do
-                    # First move to display 2
-                    current_display=''$(yabai -m query --windows --window ''${id} | jq '.display')
-                    if [ "''${current_display}" != "2" ]; then
-                        yabai -m window ''${id} --display 2
-                    fi
-                    # Then move to space 4
-                    current_space=''$(yabai -m query --windows --window ''${id} | jq '.space')
-                    if [ "''${current_space}" != "4" ]; then
-                        yabai -m window ''${id} --space 4
-                    fi
-                done
-
-                # Wait a moment for windows to settle
-                sleep 0.5
-                
-                # Get display dimensions for positioning
-                display_info=''$(yabai -m query --displays | jq '.[] | select(.index == 2)')
-                display_width=''$(echo "''${display_info}" | jq '.frame.w | floor')
-                display_height=''$(echo "''${display_info}" | jq '.frame.h | floor')
-                display_x=''$(echo "''${display_info}" | jq '.frame.x | floor')
-                display_y=''$(echo "''${display_info}" | jq '.frame.y | floor')
-                
-                # Calculate window positions and sizes
-                left_width=''$((display_width / 5))
-                middle_width=''$((display_width * 3 / 5))
-                right_width=''$((display_width / 5))
-                half_height=''$((display_height / 2))
-                
-                # Position Signal at top-left
-                yabai -m window ''${signal_id} --move abs:''${display_x}:''${display_y}
-                yabai -m window ''${signal_id} --resize abs:''${left_width}:''${half_height}
-
-                # Position Warp below Signal
-                yabai -m window ''${warp_id} --move abs:''${display_x}:''$((display_y + half_height))
-                yabai -m window ''${warp_id} --resize abs:''${left_width}:''${half_height}
-
-                # Position Cursor in middle (larger space)
-                yabai -m window ''${cursor_id} --move abs:''$((display_x + left_width)):''${display_y}
-                yabai -m window ''${cursor_id} --resize abs:''${middle_width}:''${display_height}
-
-                # Position YouTube on right
-                right_x=''$((display_x + left_width + middle_width))
-                yabai -m window ''${youtube_id} --move abs:''${right_x}:''${display_y}
-                yabai -m window ''${youtube_id} --resize abs:''${right_width}:''${display_height}
-
-                echo "Windows positioned successfully"
-            else
-                echo "Not all required windows found"
+        # Function to reposition windows based on Hammerspoon layout
+        reposition_windows() {
+          yabai_log "Repositioning windows..."
+          
+          # Check if Hammerspoon layout file exists
+          yabai_log "Searching for Hammerspoon layout file..."
+          for user_home in /Users/*; do
+            yabai_log "Checking user home: ''${user_home}"
+            if [ -d "''${user_home}" ]; then
+              # Check .hammerspoon directory
+              config_dir="''${user_home}/.hammerspoon"
+              LAYOUT_FILE="''${config_dir}/window_layouts.json"
+              yabai_log "Checking for layout file at: ''${LAYOUT_FILE}"
+              if [ -f "''${LAYOUT_FILE}" ]; then
+                yabai_log "Found Hammerspoon layouts at ''${LAYOUT_FILE}"
+                break
+              fi
             fi
+          done
+          
+          # If no layout file was found, create one
+          if [ ! -f "''${LAYOUT_FILE}" ]; then
+            yabai_log "Layout file not found, creating one"
+            
+            # Create directory if it doesn't exist
+            mkdir -p "$(dirname "''${LAYOUT_FILE}")"
+            
+            # Create a basic layout file
+            cat > "''${LAYOUT_FILE}" << 'EOF'
+{
+  "displays": {
+    "main": {
+      "apps": {}
+    },
+    "external": {
+      "apps": {
+        "Signal": { "x": 0, "y": 0, "w": 0.2, "h": 0.5 },
+        "Warp": { "x": 0, "y": 0.5, "w": 0.2, "h": 0.5 },
+        "Cursor": { "x": 0.2, "y": 0, "w": 0.6, "h": 1.0 },
+        "YouTube": { "x": 0.8, "y": 0, "w": 0.2, "h": 1.0 }
+      }
+    }
+  }
+}
+EOF
+            yabai_log "Created layout file at ''${LAYOUT_FILE}"
+          fi
+          
+          # Read the layout file
+          yabai_log "Using Hammerspoon layouts from ''${LAYOUT_FILE}"
+          LAYOUTS=$(cat "''${LAYOUT_FILE}")
+          yabai_log "Layout content: ''${LAYOUTS}"
+          
+          # Get all running windows
+          windows=$(yabai -m query --windows)
+          yabai_log "Running apps: $(echo "''${windows}" | jq -r '.[].app' | sort | uniq)"
+          
+          # Process each app in the layout
+          for display_type in main external; do
+            yabai_log "Checking ''${display_type} display layouts"
+            
+            # Get apps for this display
+            apps=$(echo "''${LAYOUTS}" | jq -r ".displays.''${display_type}.apps | keys[]" 2>/dev/null || echo "")
+            
+            if [ -n "''${apps}" ]; then
+              yabai_log "''${display_type} display has $(echo "''${apps}" | wc -l | tr -d ' ') apps in layout"
+              
+              for app in ''${apps}; do
+                yabai_log "Processing app: ''${app}"
+                
+                # Find window for this app
+                window_id=$(echo "''${windows}" | jq -r ".[] | select(.app==\"''${app}\") | .id" | head -1)
+                
+                if [ -n "''${window_id}" ]; then
+                  yabai_log "Found window for ''${app}: ''${window_id}"
+                  
+                  # Check if window is managed
+                  is_managed=$(yabai -m query --windows --window ''${window_id} | jq '.["is-managed"]')
+                  yabai_log "''${app} is_managed: ''${is_managed}"
+                  
+                  # Set window to floating if it's managed
+                  if [ "''${is_managed}" = "true" ]; then
+                    yabai_log "Setting ''${app} to floating"
+                    yabai -m window ''${window_id} --toggle float
+                    sleep 0.1
+                  fi
+                  
+                  # Get layout for this app
+                  x_percent=$(echo "''${LAYOUTS}" | jq -r ".displays.''${display_type}.apps.\"''${app}\".x")
+                  y_percent=$(echo "''${LAYOUTS}" | jq -r ".displays.''${display_type}.apps.\"''${app}\".y")
+                  w_percent=$(echo "''${LAYOUTS}" | jq -r ".displays.''${display_type}.apps.\"''${app}\".w")
+                  h_percent=$(echo "''${LAYOUTS}" | jq -r ".displays.''${display_type}.apps.\"''${app}\".h")
+                  
+                  yabai_log "''${app} layout: x=''${x_percent}, y=''${y_percent}, w=''${w_percent}, h=''${h_percent}"
+                  
+                  # Define a standard grid (e.g., 20x20 for finer control)
+                  grid_rows=20
+                  grid_cols=20
+                  
+                  # Convert percentage-based layout to grid coordinates
+                  grid_x=$(echo "''${x_percent} * ''${grid_cols}" | bc -l | awk '{printf "%.0f", $1}')
+                  grid_y=$(echo "''${y_percent} * ''${grid_rows}" | bc -l | awk '{printf "%.0f", $1}')
+                  grid_w=$(echo "''${w_percent} * ''${grid_cols}" | bc -l | awk '{printf "%.0f", $1}')
+                  grid_h=$(echo "''${h_percent} * ''${grid_rows}" | bc -l | awk '{printf "%.0f", $1}')
+                  
+                  yabai_log "''${app} grid position: ''${grid_rows}:''${grid_cols}:''${grid_x}:''${grid_y}:''${grid_w}:''${grid_h}"
+                  
+                  # Apply grid positioning
+                  yabai -m window ''${window_id} --grid "''${grid_rows}:''${grid_cols}:''${grid_x}:''${grid_y}:''${grid_w}:''${grid_h}"
+                  
+                  # Ensure window is floating
+                  is_floating=$(yabai -m query --windows --window ''${window_id} | jq '."is-floating"')
+                  if [ "''${is_floating}" = "false" ]; then
+                    yabai_log "''${app} is not floating, forcing it"
+                    yabai -m window ''${window_id} --toggle float
+                    sleep 0.1
+                  fi
+                  
+                  # Verify final position
+                  final_frame=$(yabai -m query --windows --window ''${window_id} | jq '.frame')
+                  yabai_log "''${app} final frame: ''${final_frame}"
+                  
+                  # Add a rule to keep it unmanaged
+                  yabai_log "Adding rule to keep ''${app} unmanaged"
+                  yabai -m rule --add app="^''${app}$" manage=off sticky=off opacity=1.0
+                  
+                  yabai_log "Positioned ''${app} window according to layout"
+                else
+                  yabai_log "Window for app ''${app} not found"
+                fi
+              done
+            fi
+          done
+          
+          # Final verification - log the positions of all windows
+          yabai_log "Final window positions:"
+          for app in $(echo "''${windows}" | jq -r '.[].app' | sort | uniq); do
+            # Get window IDs for this app
+            app_windows=$(echo "''${windows}" | jq -r ".[] | select(.app==\"''${app}\") | .id")
+            
+            for window_id in ''${app_windows}; do
+              # Get window details
+              window_info=$(yabai -m query --windows --window ''${window_id})
+              frame=$(echo "''${window_info}" | jq '.frame')
+              space=$(echo "''${window_info}" | jq '.space')
+              display=$(echo "''${window_info}" | jq '.display')
+              is_floating=$(echo "''${window_info}" | jq '."is-floating"')
+              
+              yabai_log "Window ''${window_id} (''${app}): space=''${space}, display=''${display}, floating=''${is_floating}, frame=''${frame}"
+            done
+          done
+          
+          yabai_log "Window positioning complete"
         }
         reposition_windows
       '';
@@ -544,6 +628,11 @@ auth       sufficient     pam_tid.so
         # Configure Karabiner-Elements
         KARABINER_USERS="/Users/dfroberg /var/root"
         
+        # Add a log function
+        log() {
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+        }
+
         # Create temp file with rules content
         TEMP_FILE=''$(mktemp)
         cat > "''$TEMP_FILE" << 'EOF'
@@ -580,7 +669,7 @@ EOF
         for USER_HOME in ''${KARABINER_USERS}; do
           KARABINER_CONFIG_DIR="''${USER_HOME}/.config/karabiner"
           KARABINER_FILE="''${KARABINER_CONFIG_DIR}/karabiner.json"
-          echo "Configuring Karabiner-Elements at ''${KARABINER_FILE}"
+          log "Configuring Karabiner-Elements at ''${KARABINER_FILE}"
 
           # Ensure directory exists
           mkdir -p "''$KARABINER_CONFIG_DIR"
@@ -590,33 +679,42 @@ EOF
             echo '{"profiles":[{"name":"Default profile","selected":true,"virtual_hid_keyboard":{"keyboard_type_v2":"ansi"},"complex_modifications":{"rules":[]}}]}' > "''$KARABINER_FILE"
           fi
 
-          # Update the rules using jq
-          RULES=''$(cat "''$TEMP_FILE")
-          jq --arg rules "''$RULES" '
-            .profiles[0].complex_modifications.rules = (
-              if (.profiles[0].complex_modifications.rules | length > 0) then
-                (.profiles[0].complex_modifications.rules | map(
-                  if .description == "Section (§) to a Hyper Key" then
-                    ($rules | fromjson)
-                  else
-                    .
-                  end
-                ))
-              else
-                [($rules | fromjson)]
-              end
-            )
-          ' "''$KARABINER_FILE" > "''${KARABINER_FILE}.tmp" && mv "''${KARABINER_FILE}.tmp" "''$KARABINER_FILE"
-
-          # Ensure configuration is loaded
-          KARABINER_CLI="/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli"
-          if [ -x "''${KARABINER_CLI}" ]; then
-            # Select the default profile to ensure changes are applied
-            "''${KARABINER_CLI}" --select-profile 'Default profile' || true
-            # Copy to system default to ensure persistence
-            "''${KARABINER_CLI}" --copy-current-profile-to-system-default-profile || true
+          # Check if jq is available
+          if ! command -v jq &> /dev/null; then
+            echo "Warning: jq not found, skipping Karabiner configuration update"
           else
-            echo "Warning: karabiner_cli not found at ''${KARABINER_CLI}"
+            # Update the rules using jq
+            RULES=''$(cat "''$TEMP_FILE")
+            jq --arg rules "''$RULES" '
+              .profiles[0].complex_modifications.rules = (
+                if (.profiles[0].complex_modifications.rules | length > 0) then
+                  (.profiles[0].complex_modifications.rules | map(
+                    if .description == "Section (§) to a Hyper Key" then
+                      ($rules | fromjson)
+                    else
+                      .
+                    end
+                  ))
+                else
+                  [($rules | fromjson)]
+                end
+              )
+            ' "''$KARABINER_FILE" > "''${KARABINER_FILE}.tmp" && mv "''${KARABINER_FILE}.tmp" "''$KARABINER_FILE" || echo "Error: Failed to update Karabiner configuration"
+          fi
+
+          # Check common installation paths
+          for cli_path in "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli" "/Applications/Karabiner-Elements.app/Contents/MacOS/karabiner_cli"; do
+            if [ -x "''${cli_path}" ]; then
+              KARABINER_CLI="''${cli_path}"
+              break
+            fi
+          done
+
+          if [ -n "''${KARABINER_CLI}" ]; then
+            # Use the CLI
+            "''${KARABINER_CLI}" --select-profile 'Default profile' || true
+          else
+            echo "Warning: karabiner_cli not found"
           fi
         done
 
