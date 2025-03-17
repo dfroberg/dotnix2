@@ -8,6 +8,7 @@
     ./starship.nix
     ./tmux.nix
     ./wezterm.nix
+    ./aerospace.nix
   ];
   nixpkgs = {
     config = {
@@ -87,8 +88,26 @@
           fi
         '';
       };
+      yabaisetup = lib.mkIf pkgs.stdenvNoCC.isDarwin {
+        source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/yabai";
+        target = ".config/yabai";
+        recursive = true;
+      };
     };
-
+    # activation.yabaisetup = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    #   echo "Running yabai activation..."
+    #   if command -v /run/current-system/sw/bin/yabai >/dev/null 2>&1; then
+    #     echo "yabai is installed"
+    #     chmod +x "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh"
+    #     echo "yabaisetup.sh is executable"
+    #     echo "Running yabaisetup.sh"
+    #     # Run in background to avoid blocking home-manager activation
+    #     /usr/bin/env timeout 60s "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh"
+    #     echo "yabaisetup.sh has been started in background"
+    #   else
+    #     echo "yabai is not installed"
+    #   fi
+    # '';
     sessionVariables = {
       EDITOR = "nvim";
       SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
@@ -102,6 +121,13 @@
     fzf.enable = true;
     starship.enable = true;
     zoxide.enable = true;
+    
+    # Aerospace configuration
+    aerospace = lib.mkIf pkgs.stdenvNoCC.isDarwin {
+      enable = true;
+      package = pkgs.aerospace;
+    };
+    
     zsh = {
       enable = true;
       enableCompletion = false; # enabled in oh-my-zsh
@@ -113,8 +139,13 @@
         da = "direnv allow";
         nud = "darwin-rebuild switch --flake ~/dotnix";
         showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
+        showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
         showspaces = "yabai -m query --spaces | jq -r '.[].label'";
         showdisplays = "yabai -m query --displays | jq -r '.[].name'";
+        yabaisetup = "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh";
+        aerospacesetup = "${config.home.homeDirectory}/dotnix/.config/aerospace/setup.sh";
+        aerospacereset = "${config.home.homeDirectory}/dotnix/.config/aerospace/reset.sh";
+        aerospaceinfo = "${config.home.homeDirectory}/dotnix/.config/aerospace/info.sh";
       };
       plugins = [
         {
