@@ -1,0 +1,89 @@
+{
+  "monitors": {
+    "LC49G95T": "external",
+    "Built-in Retina Display": "main"
+  },
+  "workspaces": {
+    "1": {
+      "monitor": "main",
+      "layout": "accordion horizontal vertical",
+      "apps": ["Chrome", "Calendar", "Slack", "Discord", "Obsidian", "LinkedIn", "Gmail", "Notion"]
+    },
+    "2": {
+      "monitor": "external",
+      "layout": "custom",
+      "structure": {
+        "type": "horizontal_split",
+        "ratio": 0.3,
+        "left": {
+          "type": "vertical_split",
+          "ratio": 0.7,
+          "top": {
+            "type": "accordion",
+            "orientation": "vertical",
+            "apps": ["zoom.us", "Google Meet", "Microsoft Teams"]
+          },
+          "bottom": {
+            "type": "container",
+            "app": "Signal"
+          }
+        },
+        "right": {
+          "type": "horizontal_split",
+          "ratio": 0.7,
+          "left": {
+            "type": "container",
+            "app": "Cursor"
+          },
+          "right": {
+            "type": "vertical_split",
+            "ratio": 0.5,
+            "top": {
+              "type": "container",
+              "app": "YouTube"
+            },
+            "bottom": {
+              "type": "container",
+              "app": "WezTerm"
+            }
+          }
+        }
+      },
+      "apps": [
+        "Signal", "WezTerm", "Cursor", "YouTube", "zoom.us", 
+        "Google Meet", "Microsoft Teams"
+      ]
+    },
+    "3": {
+      "monitor": "external",
+      "layout": "tiles horizontal vertical",
+      "apps": ["Word"]
+    }
+  },
+  "displays": {
+    "main": {
+      "apps": {
+        "Chrome": {},
+        "Calendar": {},
+        "Slack": {},
+        "Discord": {},
+        "Obsidian": {},
+        "LinkedIn": {},
+        "Gmail": {},
+        "Notion": {}
+      }
+    },
+    "external": {
+      "apps": {
+        "Signal": {},
+        "WezTerm": {},
+        "wezterm-gui": {},
+        "Cursor": {},
+        "YouTube": {},
+        "zoom.us": {},
+        "Google Meet": {},
+        "Microsoft Teams": {}
+      }
+    }
+  }
+}

@@ -1,16 +1,102 @@
 {
   "displays": {
     "main": {
-      "apps": {}
+      "positions": {
+        "main_center": { "x": 0.2, "y": 0, "w": 1, "h": 1 },
+        "main_right": { "x": 0.5, "y": 0, "w": 0.5, "h": 1 },
+        "main_left": { "x": 0, "y": 0, "w": 0.5, "h": 1 }
+      },
+      "apps": {
+        "Chrome": { "position": "main_center" },
+        "Calendar": { "position": "main_center" }
+      }
     },
     "external": {
+      "positions": {
+        "top_left": { "x": 0, "y": 0, "w": 0.2, "h": 0.5 },
+        "top_right": { "x": 0.8, "y": 0, "w": 0.2, "h": 0.5 },
+        "bottom_left": { "x": 0, "y": 0.5, "w": 0.2, "h": 0.5 },
+        "bottom_right": { "x": 0.8, "y": 0.5, "w": 0.2, "h": 0.5 },
+        "center": { "x": 0.2, "y": 0, "w": 0.6, "h": 1 },
+        "center_right": { "x": 0.5, "y": 0, "w": 0.3, "h": 1 },
+        "center_left": { "x": 0.2, "y": 0, "w": 0.3, "h": 1 }
+      },
       "apps": {
-        "Signal": { "x": 0, "y": 0, "w": 0.2, "h": 0.495 },
-        "WezTerm": { "x": 0, "y": 0.5, "w": 0.2, "h": 0.5 },
-        "Warp": { "x": 0, "y": 0.5, "w": 0.2, "h": 0.5 },
-        "Cursor": { "x": 0.2, "y": 0, "w": 0.6, "h": 1.0 },
-        "YouTube": { "x": 0.8, "y": 0, "w": 0.2, "h": 0.5 },
-        "Slack": { "x": 0.8, "y": 0.5, "w": 0.2, "h": 0.5 }
+        "Signal": { 
+          "windows": [
+            {
+              "title_pattern": "Signal",
+              "position": "bottom_left"
+            }
+          ],
+          "default_position": "bottom_left"
+        },
+        "WezTerm": { "position": "top_right" },
+        "wezterm-gui": { "position": "top_right" },
+        "Warp": { "position": "bottom_left" },
+        "Cursor": { "position": "center" },
+        "Windsurf": { "position": "center" },
+        "YouTube": { "position": "top_right" },
+        "Slack": { "position": "bottom_right" },
+        "zoom.us": { 
+          "windows": [
+            {
+              "title_pattern": "Zoom Meeting",
+              "position": "top_left"
+            },
+            {
+              "title_pattern": "Zoom Workplace",
+              "position": "center_left"
+            },
+            {
+              "title_pattern": "",
+              "position": "center_left"
+            }
+          ],
+          "default_position": "center"
+        },
+        "MSTeams": { "position": "top_left" },
+        "Gmail": { "position": "center_left" },
+        "Google Meet": { "position": "top_left" },
+        "LinkedIn": { "position": "center_left" },
+        "Notion": { "position": "center_left" },
+        "Discord": { "position": "center_left" },
+        "Obsidian": { "position": "bottom_right" },
+        "Aide": { "position": "bottom_left" },
+        "Microsoft Teams": {
+          "windows": [
+            {
+              "title_pattern": "Meeting with",
+              "position": "top_left"
+            },
+            {
+              "title_pattern": "Chat |",
+              "position": "top_left"
+            },
+            {
+              "title_pattern": "Calendar",
+              "position": "center"
+            }
+          ],
+          "default_position": "center"
+        },
+        "Google Chrome": {
+          "windows": [
+            {
+              "title_pattern": "YouTube",
+              "position": "top_right"
+            },
+            {
+              "title_pattern": "Gmail",
+              "position": "center_left"
+            },
+            {
+              "title_pattern": "Google Meet",
+              "position": "top_left"
+            }
+          ],
+          "default_position": "center"
+        }
       }
     }
   }

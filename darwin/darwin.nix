@@ -314,26 +314,35 @@ auth       sufficient     pam_tid.so
         TEMP_FILE=''$(mktemp)
         cat > "''$TEMP_FILE" << 'EOF'
 {
-    "description": "Section (§) to a Hyper Key",
+    "description": "Change caps_lock to command+control+option. Toggle Caps Lock when pressed alone.",
+    "enabled": false,
     "manipulators": [
         {
             "from": {
-                "key_code": "non_us_backslash",
+                "key_code": "caps_lock",
                 "modifiers": { "optional": ["any"] }
             },
-            "to": [{ "key_code": "f19" }],
-            "to_if_alone": [{ "key_code": "escape" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "f19",
-                "modifiers": { "optional": ["any"] }
+            "parameters": {
+              "basic.to_if_held_down_threshold_milliseconds": 250
             },
-            "to": [
+            "to_if_held_down": [
                 {
-                    "key_code": "left_shift",
-                    "modifiers": ["left_command", "left_control", "left_option"]
+                  "key_code": "left_option",
+                  "modifiers": ["left_command", "left_control"]
+                }
+            ],
+            "to_delayed_action": {
+              "to_if_canceled": [
+                {
+                  "key_code": "caps_lock"
+                }
+              ]
+            },
+            "to_if_alone": [
+                {
+                    "key_code": "caps_lock",
+                    "repeat": false,
+                    "halt": true
                 }
             ],
             "type": "basic"

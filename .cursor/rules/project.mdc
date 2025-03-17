@@ -1,9 +1,12 @@
 ---
-description: Project specific
+description: Project specifics
 globs: 
+alwaysApply: false
 ---
 # Project dot files and configurations
 
 - We use darwin nix on a Macbook Pro M1
 - @README.md contains the particulars.
 - Use tools made available to you
+- bash uses if and fi
+- we use aerospace for window management, ensure you always follow the documentation in @docs
