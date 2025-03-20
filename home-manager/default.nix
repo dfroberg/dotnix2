@@ -122,11 +122,6 @@
     starship.enable = true;
     zoxide.enable = true;
     
-    aerospace = {
-      enable = true;
-      package = pkgs.aerospace;
-    };
-    
     zsh = {
       enable = true;
       enableCompletion = false; # enabled in oh-my-zsh
