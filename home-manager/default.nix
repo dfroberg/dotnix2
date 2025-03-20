@@ -122,11 +122,6 @@
     starship.enable = true;
     zoxide.enable = true;
     
-    # Aerospace configuration
-    aerospace = lib.mkIf pkgs.stdenvNoCC.isDarwin {
-      enable = true;
-      package = pkgs.aerospace;
-    };
     
     zsh = {
       enable = true;
