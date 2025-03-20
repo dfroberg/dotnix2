@@ -61,7 +61,6 @@
         owner = "wbingli";
         repo = "zsh-wakatime";
         rev = "master";
-        sha256 = "sha256-QN/MUDm+hVJUMA4PDqs0zn9XC2wQZrgQr4zmCF0Vruk=";
       })
       jq
       (nerdfonts.override {
