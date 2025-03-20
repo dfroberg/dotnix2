@@ -162,7 +162,7 @@
       '';
     };
     aerospace = {
-      # enable = false;  # Disabled here since it's managed by home-manager
+      enable = false;  # Disabled here since it's managed by home-manager
     };
   };
 
