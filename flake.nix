@@ -75,6 +75,10 @@
         user = "dfroberg";
         arch = "aarch64-darwin";
       };
+      "Admins-MacBook-Pro" = darwinSystem {
+        user = "dannyfroberg";
+        arch = "aarch64-darwin";
+      };
     };
   };
 }
