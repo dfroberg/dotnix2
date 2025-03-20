@@ -8,7 +8,6 @@
     ./starship.nix
     ./tmux.nix
     ./wezterm.nix
-    ./aerospace.nix
   ];
   nixpkgs = {
     config = {
@@ -121,6 +120,11 @@
     fzf.enable = true;
     starship.enable = true;
     zoxide.enable = true;
+    
+    aerospace = {
+      enable = true;
+      package = pkgs.aerospace;
+    };
     
     zsh = {
       enable = true;
