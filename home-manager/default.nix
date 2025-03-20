@@ -8,6 +8,7 @@
     ./starship.nix
     ./tmux.nix
     ./wezterm.nix
+    ./aerospace.nix
   ];
   nixpkgs = {
     config = {
@@ -17,6 +18,17 @@
         "ec2-api-tools"
         "bws"
       ];
+    };
+  };
+
+  launchd.agents.aerospace = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${config.programs.aerospace.package}/bin/aerospace" ];
+      KeepAlive = true;
+      RunAtLoad = true;
+      StandardOutPath = "/tmp/aerospace.log";
+      StandardErrorPath = "/tmp/aerospace.error.log";
     };
   };
 
@@ -43,6 +55,8 @@
       thefuck
       uv
       wakatime-cli
+      jankyborders
+      sketchybar
       (pkgs.fetchFromGitHub {
         owner = "wbingli";
         repo = "zsh-wakatime";
@@ -57,22 +71,33 @@
         enableWindowsFonts = true;
       })
     ];
-    activation.decryptSecrets = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      echo "Decrypting secrets..."
-      if [ -f ${config.home.homeDirectory}/.config/sops/age/keys.txt ]; then
-        mkdir -p ${config.home.homeDirectory}/.config/secrets
-        SOPS_AGE_KEY_FILE=${config.home.homeDirectory}/.config/sops/age/keys.txt ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/test.age} > ${config.home.homeDirectory}/.config/secrets/test-secret.yaml
-        echo "Decryption completed."
-      else
-        echo "Decryption failed, add your age key."
-        exit 1
-      fi
-    '';
 
-    activation.cleanupHammerspoon = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
-      echo "Cleaning up Hammerspoon symlinks..."
-      rm -rf ${config.home.homeDirectory}/.hammerspoon
-    '';
+    activation = {
+      decryptSecrets = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        echo "Decrypting secrets..."
+        if [ -f ${config.home.homeDirectory}/.config/sops/age/keys.txt ]; then
+          mkdir -p ${config.home.homeDirectory}/.config/secrets
+          SOPS_AGE_KEY_FILE=${config.home.homeDirectory}/.config/sops/age/keys.txt ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/test.age} > ${config.home.homeDirectory}/.config/secrets/test-secret.yaml
+          echo "Decryption completed."
+        else
+          echo "Decryption failed, add your age key."
+          exit 1
+        fi
+      '';
+
+      cleanupHammerspoon = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+        echo "Cleaning up Hammerspoon symlinks..."
+        rm -rf ${config.home.homeDirectory}/.hammerspoon
+      '';
+
+      linkAerospaceConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        echo "Creating symlink for aerospace.toml..."
+        mkdir -p ${config.home.homeDirectory}/.config/aerospace
+        rm -f ${config.home.homeDirectory}/.config/aerospace/aerospace.toml
+        ln -sf ${config.home.homeDirectory}/dotnix/.config/aerospace/aerospace.toml ${config.home.homeDirectory}/.config/aerospace/aerospace.toml
+        echo "Symlink created."
+      '';
+    };
 
     # Home Manager is pretty good at managing dotfiles. The primary way to manage
     # plain files is through 'home.file'.
@@ -124,6 +149,15 @@
     aerospace = {
       enable = true;
       package = pkgs.aerospace;
+      settings = {
+        start-at-login = true;
+        enable-normalization-flatten-containers = true;
+        enable-normalization-opposite-orientation-for-nested-containers = true;
+        accordion-padding = 30;
+        default-root-container-layout = "tiles";
+        default-root-container-orientation = "auto";
+        on-focused-monitor-changed = ["move-mouse monitor-lazy-center"];
+      };
     };
     
     zsh = {
