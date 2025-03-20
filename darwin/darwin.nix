@@ -161,6 +161,9 @@
         # Window management hotkeys can go here
       '';
     };
+    aerospace = {
+      enable = false;  # Disabled here since it's managed by home-manager
+    };
   };
 
   homebrew = {
