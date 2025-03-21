@@ -24,7 +24,7 @@
   launchd.agents.aerospace = {
     enable = true;
     config = {
-      ProgramArguments = [ "${config.programs.aerospace.package}/bin/aerospace" ];
+      ProgramArguments = [ "${config.programs.aerospace-custom.package}/bin/aerospace" ];
       KeepAlive = true;
       RunAtLoad = true;
       StandardOutPath = "/tmp/aerospace.log";
@@ -142,10 +142,10 @@
     starship.enable = true;
     zoxide.enable = true;
     
-    aerospace = {
+    aerospace-custom = {
       enable = true;
       package = pkgs.aerospace;
-      userSettings = {
+      settings = {
         start-at-login = true;
         enable-normalization-flatten-containers = true;
         enable-normalization-opposite-orientation-for-nested-containers = true;
