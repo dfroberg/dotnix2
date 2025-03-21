@@ -43,8 +43,8 @@ sudo mv /etc/zshrc /etc/zshrc.before-nix-darwin
 
 2. Clone the repository:
 ```bash
-git clone https://github.com/dfroberg/dotnix2.git ~/dotnix2
-cd ~/dotnix2
+git clone https://github.com/dfroberg/dotnix2.git ~/dotnix
+cd ~/dotnix
 ```
 
 3. For a new machine, check your hostname:
@@ -97,11 +97,11 @@ nix --extra-experimental-features "nix-command flakes" run nix-darwin -- switch 
 
 ### NixOS
 
-`sudo nixos-rebuild switch --flake ~/src/github.com/dfroberg/dotnix2`
+`sudo nixos-rebuild switch --flake ~/src/github.com/dfroberg/dotnix`
 
 ### Darwin
 
-`darwin-rebuild switch --flake ~/src/github.com/dfroberg/dotnix2`
+`darwin-rebuild switch --flake ~/src/github.com/dfroberg/dotnix`
 
 ## Home Manager
 
