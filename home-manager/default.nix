@@ -34,6 +34,7 @@
 
   home = {
     stateVersion = "24.05"; # Please read the comment before changing.
+    enableNixpkgsReleaseCheck = false;  # Disable version mismatch warning
 
     # The home.packages option allows you to install Nix packages into your
     # environment.
@@ -212,9 +213,12 @@
     jujutsu.enable = true;
 
     vscode = {
-      extensions = with pkgs.vscode-extensions; [
-        wakatime.vscode-wakatime
-      ];
+      enable = true;
+      profiles.default = {
+        extensions = with pkgs.vscode-extensions; [
+          wakatime.vscode-wakatime
+        ];
+      };
     };
   };
 }

@@ -1,13 +1,13 @@
 {
   description = "Danny's Nix System Configuration";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     agenix = {
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
@@ -26,6 +26,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
+
+  # Add minimum Nix version requirement
+  nixConfig = {
+    extra-experimental-features = [ "nix-command" "flakes" ];
+    min-version = "2.26.0";  # Require at least Nix 2.26.0
+  };
+
   outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, ... } @ inputs: let
     nixpkgs.config.allowUnfree = true;
     darwinSystem = {user, arch ? "aarch64-darwin"}:
