@@ -142,10 +142,10 @@
     starship.enable = true;
     zoxide.enable = true;
     
-    aerospace-custom = {
+    aerospace = {
       enable = true;
       package = pkgs.aerospace;
-      settings = {
+      userSettings = {
         start-at-login = true;
         enable-normalization-flatten-containers = true;
         enable-normalization-opposite-orientation-for-nested-containers = true;
