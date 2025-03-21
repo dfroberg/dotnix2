@@ -11,7 +11,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
-      url = "github:LnL7/nix-darwin";
+      url = "github:LnL7/nix-darwin/2d9b63316926aa130a5a51136d93b9be28808f26";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-wsl = {
@@ -30,7 +30,7 @@
   # Add minimum Nix version requirement
   nixConfig = {
     extra-experimental-features = [ "nix-command" "flakes" ];
-    min-version = "2.18.1";  # Require at least Nix 2.18.1 for Determinate Systems compatibility
+    min-version = "2.18.1";  # Minimum version for Determinate Systems compatibility
   };
 
   outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, ... } @ inputs: let
@@ -41,11 +41,11 @@
         modules = [
           ./darwin/darwin.nix
           { nixpkgs.config.allowUnfree = true; }
-          # Check nix-darwin version
+          # Check nix-darwin version - 1.2 includes the fix for Homebrew --no-lock removal
           ({ lib, ... }: {
             assertions = [{
-              assertion = lib.versionAtLeast (lib.versions.majorMinor darwin.version) "1.1";
-              message = "nix-darwin version >= 1.1 is required for proper Determinate Systems compatibility";
+              assertion = lib.versionAtLeast (lib.versions.majorMinor darwin.version) "1.2";
+              message = "nix-darwin version >= 1.2 is required for compatibility with latest Homebrew changes (--no-lock removal)";
             }];
           })
           agenix.darwinModules.default
