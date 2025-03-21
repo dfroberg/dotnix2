@@ -82,6 +82,18 @@
       };
     };
     darwinConfigurations = {
+      bootstrap = darwin.lib.darwinSystem {
+        system = "aarch64-darwin";
+        modules = [
+          ({ pkgs, ... }: {
+            # Minimal config to bootstrap the system
+            nixpkgs.config.allowUnfree = true;
+            services.nix-daemon.enable = false;  # Let Determinate Systems handle this
+            nix.settings.experimental-features = [ "nix-command" "flakes" ];
+            system.stateVersion = 4;
+          })
+        ];
+      };
       "XM14644HYP" = darwinSystem {
         user = "dfroberg";
       };
