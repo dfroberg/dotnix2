@@ -65,7 +65,7 @@
         hash = "sha256-iMHPDz4QvaL3YdRd3vaaz1G4bj8ftRVD9cD0KyJVeAs=";
       })
       jq
-      nerd-fonts.jetbrainsmono
+      nerd-fonts.jetbrains-mono
     ];
 
     activation = {
