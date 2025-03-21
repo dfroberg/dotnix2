@@ -44,7 +44,7 @@
           # Check nix-darwin version - 1.2 includes the fix for Homebrew --no-lock removal
           ({ lib, ... }: {
             assertions = [{
-              assertion = lib.versionAtLeast (lib.versions.majorMinor darwin.version) "1.2";
+              assertion = (inputs.darwin.sourceInfo.lastModified or 0) >= 1742373336;
               message = "nix-darwin version >= 1.2 is required for compatibility with latest Homebrew changes (--no-lock removal)";
             }];
           })
