@@ -50,6 +50,8 @@
       direnv
       wakatime-cli
       devenv
+      gnupg
+      pinentry_mac
       
       # Development tools
       amber
@@ -60,7 +62,6 @@
       smartcat
       
       # Security tools
-      gnupg
       sops
       age
       bws
@@ -166,6 +167,8 @@
       ZSH_WAKATIME_PROJECT_DETECTION = "true"; # enable project detection
       WAKATIME_HOME = "${config.home.homeDirectory}/.wakatime";
       NIX_CONFIG = "experimental-features = nix-command flakes";
+      # GPG configuration
+      GPG_TTY = "$(tty)";
       # Ensure XDG paths are set
       XDG_DATA_HOME = "${config.home.homeDirectory}/.local/share";
       XDG_CONFIG_HOME = "${config.home.homeDirectory}/.config";
@@ -187,6 +190,23 @@
     fzf.enable = true;
     starship.enable = true;
     zoxide.enable = true;
+    
+    # Add GPG configuration
+    gpg = {
+      enable = true;
+      settings = {
+        trust-model = "tofu+pgp";
+      };
+    };
+
+    # Enable GPG agent
+    gpg-agent = {
+      enable = true;
+      enableSshSupport = true;
+      pinentryFlavor = "mac";
+      defaultCacheTtl = 3600;
+      maxCacheTtl = 7200;
+    };
     
     aerospace-custom = {
       enable = true;
@@ -361,3 +381,4 @@
     };
   };
 }
+
