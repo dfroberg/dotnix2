@@ -154,13 +154,14 @@
       }
       {
         plugin = pkgs.vimUtils.buildVimPlugin {
-          name = "nvim-tree-pairs"; # make % match in TS
+          name = "nvim-tree-pairs";
           src = pkgs.fetchFromGitHub {
             owner = "yorickpeterse";
             repo = "nvim-tree-pairs";
             rev = "e7f7b6cc28dda6f3fa271ce63b0d371d5b7641da";
             hash = "sha256-fb4EsrWAbm8+dWAhiirCPuR44MEg+KYb9hZOIuEuT24=";
           };
+          dependencies = [ nvim-treesitter ];
         };
         type = "lua";
         config = ''
