@@ -30,7 +30,7 @@
   # Add minimum Nix version requirement
   nixConfig = {
     extra-experimental-features = [ "nix-command" "flakes" ];
-    min-version = "2.26.0";  # Require at least Nix 2.26.0
+    min-version = "2.18.1";  # Require at least Nix 2.18.1 for Determinate Systems compatibility
   };
 
   outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, ... } @ inputs: let
@@ -41,6 +41,13 @@
         modules = [
           ./darwin/darwin.nix
           { nixpkgs.config.allowUnfree = true; }
+          # Check nix-darwin version
+          ({ lib, ... }: {
+            assertions = [{
+              assertion = lib.versionAtLeast (lib.versions.majorMinor darwin.version) "1.1";
+              message = "nix-darwin version >= 1.1 is required for proper Determinate Systems compatibility";
+            }];
+          })
           agenix.darwinModules.default
           home-manager.darwinModules.home-manager
           {
