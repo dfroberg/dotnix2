@@ -214,11 +214,9 @@
 
     vscode = {
       enable = true;
-      profiles.default = {
-        extensions = with pkgs.vscode-extensions; [
-          wakatime.vscode-wakatime
-        ];
-      };
+      extensions = with pkgs.vscode-extensions; [
+        wakatime.vscode-wakatime
+      ];
     };
   };
 }
