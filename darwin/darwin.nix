@@ -100,6 +100,7 @@
   
   # Auto upgrade nix package and the daemon service.
   nix = {
+    enable = false;  # Allow Determinate Systems to manage Nix
     package = pkgs.nix;
     settings = {
       "extra-experimental-features" = [ "nix-command" "flakes" ];
@@ -123,7 +124,6 @@
   ];
 
   services = {
-    nix-daemon.enable = true;
     yabai = {
       enable = false;
       package = pkgs.yabai;
@@ -430,7 +430,7 @@ EOF
   };
   security = {
     pam = {
-      enableSudoTouchIdAuth = true;
+      services.sudo_local.touchIdAuth = true;
     };
     sudo = {
       extraConfig = ''
