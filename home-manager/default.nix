@@ -146,7 +146,7 @@
     starship.enable = true;
     zoxide.enable = true;
     
-    aerospace = {
+    aerospace-custom = {
       enable = true;
       package = pkgs.aerospace;
       settings = {

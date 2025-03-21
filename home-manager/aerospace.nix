@@ -3,10 +3,10 @@
 with lib;
 
 let
-  cfg = config.programs.aerospace;
+  cfg = config.programs.aerospace-custom;
 in {
-  options.programs.aerospace = {
-    enable = mkEnableOption "Aerospace window manager";
+  options.programs.aerospace-custom = {
+    enable = mkEnableOption "Aerospace window manager (custom)";
     
     package = mkOption {
       type = types.package;
