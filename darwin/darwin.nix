@@ -118,11 +118,7 @@
   system.stateVersion = 4;
 
   fonts.packages = with pkgs; [
-    (nerdfonts.override {
-      fonts = [
-        "JetBrainsMono"
-      ];
-    })
+    nerd-fonts.jetbrains-mono
     atkinson-hyperlegible
   ];
 
