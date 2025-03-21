@@ -33,7 +33,7 @@
   };
 
   home = {
-    stateVersion = "23.11"; # Updated to match home-manager version
+    stateVersion = "24.05"; # Updated to match home-manager version
     enableNixpkgsReleaseCheck = false;  # Disable version mismatch warning
 
     # The home.packages option allows you to install Nix packages into your
