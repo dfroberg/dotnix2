@@ -62,6 +62,7 @@
       "original": {
         "owner": "LnL7",
         "repo": "nix-darwin",
+        "rev": "2d9b63316926aa130a5a51136d93b9be28808f26",
         "type": "github"
       }
     },
