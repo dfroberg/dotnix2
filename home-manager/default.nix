@@ -10,6 +10,9 @@
     ./wezterm.nix
     ./aerospace.nix
   ];
+
+  programs.aerospace-custom.enable = true;
+
   nixpkgs = {
     config = {
       allowUnfree = true;
