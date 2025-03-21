@@ -37,39 +37,50 @@
     stateVersion = "24.05"; # Updated to match home-manager version
     enableNixpkgsReleaseCheck = false;  # Disable version mismatch warning
 
+    sessionPath = [
+      "$HOME/.nix-profile/bin"  # User profile first
+      "/run/current-system/sw/bin"
+      "/nix/var/nix/profiles/default/bin"
+    ];
+
     # The home.packages option allows you to install Nix packages into your
     # environment.
     packages = with pkgs; [
-      amber
+      # Core tools
+      direnv
+      wakatime-cli
       devenv
+      
+      # Development tools
+      amber
       markdown-oxide
       nixd
       ollama
       ripgrep
       smartcat
+      
+      # Security tools
       gnupg
       sops
       age
       bws
+      
+      # Shell and environment
       oh-my-zsh
       fish
       wakatime
-      (python3.withPackages (ps: with ps; [
-        psutil
-        thefuck
-      ]))
-      uv
-      wakatime-cli
       jankyborders
       sketchybar
+      jq
+      pkgs.nerd-fonts.jetbrains-mono
+      
+      # Wakatime ZSH plugin
       (pkgs.fetchFromGitHub {
         owner = "wbingli";
         repo = "zsh-wakatime";
         rev = "master";
         hash = "sha256-iMHPDz4QvaL3YdRd3vaaz1G4bj8ftRVD9cD0KyJVeAs=";
       })
-      jq
-      pkgs.nerd-fonts.jetbrains-mono
     ];
 
     activation = {
@@ -155,6 +166,19 @@
       ZSH_WAKATIME_PROJECT_DETECTION = "true"; # enable project detection
       WAKATIME_HOME = "${config.home.homeDirectory}/.wakatime";
       NIX_CONFIG = "experimental-features = nix-command flakes";
+      # Ensure XDG paths are set
+      XDG_DATA_HOME = "${config.home.homeDirectory}/.local/share";
+      XDG_CONFIG_HOME = "${config.home.homeDirectory}/.config";
+      XDG_CACHE_HOME = "${config.home.homeDirectory}/.cache";
+      XDG_STATE_HOME = "${config.home.homeDirectory}/.local/state";
+      # Add local bin to PATH
+      PATH = lib.concatStringsSep ":" [
+        "$HOME/.nix-profile/bin"  # User profile first
+        "${config.home.homeDirectory}/.local/bin"
+        "/run/current-system/sw/bin"
+        "/nix/var/nix/profiles/default/bin"
+        "$PATH"
+      ];
     };
   };
 
@@ -181,6 +205,34 @@
     zsh = {
       enable = true;
       enableCompletion = false; # enabled in oh-my-zsh
+      
+      initExtra = ''
+        # Source nix profile
+        if [ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+          . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+        fi
+        if [ -f "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh" ]; then
+          . "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
+        fi
+
+        # Ensure all nix paths are available first
+        export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+        export PATH="/run/current-system/sw/bin:$PATH"
+        export PATH="$HOME/.nix-profile/bin:$PATH"
+
+        # Initialize direnv
+        if command -v direnv >/dev/null 2>&1; then
+          eval "$(direnv hook zsh)"
+        fi
+
+        # Initialize thefuck from Homebrew
+        if command -v thefuck >/dev/null; then
+          eval $(thefuck --alias)
+        fi
+
+        # Ensure Homebrew is in PATH
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+      '';
       
       shellAliases = {
         asl = "aws sso login";
@@ -212,12 +264,11 @@
         enable = true;
         theme = "terminalparty";
         plugins = [
-	        "git"
+          "git"
           "kubectl"
           "helm"
           "docker"
           "golang"
-          "thefuck"
         ];
       };
     };
@@ -225,6 +276,18 @@
     direnv = {
       enable = true;
       nix-direnv.enable = true;
+      stdlib = ''
+        # Add support for devenv
+        use_devenv() {
+          watch_file devenv.nix devenv.lock devenv.yaml
+          if has devenv; then
+            eval "$(devenv print-dev-env)"
+          else
+            echo "devenv is not installed. Please install it with:"
+            echo "nix --extra-experimental-features 'nix-command flakes' profile install github:cachix/devenv/latest"
+          fi
+        }
+      '';
     };
 
     jujutsu.enable = true;
@@ -234,6 +297,67 @@
       extensions = with pkgs.vscode-extensions; [
         wakatime.vscode-wakatime
       ];
+    };
+
+    fish = {
+      enable = true;
+      interactiveShellInit = ''
+        # Disable greeting
+        set fish_greeting
+
+        # Ensure all nix paths are available first
+        fish_add_path --prepend --move /nix/var/nix/profiles/default/bin
+        fish_add_path --prepend --move /run/current-system/sw/bin
+        fish_add_path --prepend --move $HOME/.nix-profile/bin
+
+        # Initialize direnv
+        if command -v direnv >/dev/null 2>&1
+          direnv hook fish | source
+        end
+
+        # Initialize Homebrew
+        eval (/opt/homebrew/bin/brew shellenv)
+
+        # Initialize thefuck from Homebrew
+        if command -v thefuck >/dev/null
+          thefuck --alias | source
+        end
+      '';
+      
+      shellAliases = {
+        # Inherit all ZSH aliases
+        asl = "aws sso login";
+        ls = "eza -l";
+        ll = "eza -la";
+        da = "direnv allow";
+        nud = "nix --extra-experimental-features \"nix-command flakes\" run nix-darwin -- switch --flake ~/dotnix";
+        showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
+        showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
+        showspaces = "yabai -m query --spaces | jq -r '.[].label'";
+        showdisplays = "yabai -m query --displays | jq -r '.[].name'";
+        yabaisetup = "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh";
+        aerospacesetup = "${config.home.homeDirectory}/dotnix/.config/aerospace/setup.sh";
+        aerospacereset = "${config.home.homeDirectory}/dotnix/.config/aerospace/reset.sh";
+        aerospaceinfo = "${config.home.homeDirectory}/dotnix/.config/aerospace/info.sh";
+      };
+      
+      shellInit = ''
+        # Set environment variables
+        set -gx EDITOR nvim
+        set -gx VISUAL $EDITOR
+        
+        # Ensure nix experimental features are enabled
+        set -gx NIX_CONFIG "experimental-features = nix-command flakes"
+        
+        # Set wakatime variables
+        set -gx ZSH_WAKATIME_PROJECT_DETECTION "true"
+        set -gx WAKATIME_HOME "$HOME/.wakatime"
+
+        # Add nix paths to fish_user_paths to ensure persistence
+        contains /nix/var/nix/profiles/default/bin $fish_user_paths; or set -U fish_user_paths /nix/var/nix/profiles/default/bin $fish_user_paths
+        contains /run/current-system/sw/bin $fish_user_paths; or set -U fish_user_paths /run/current-system/sw/bin $fish_user_paths
+        contains $HOME/.nix-profile/bin $fish_user_paths; or set -U fish_user_paths $HOME/.nix-profile/bin $fish_user_paths
+      '';
     };
   };
 }
