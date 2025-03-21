@@ -78,12 +78,28 @@
         echo "Decrypting secrets..."
         if [ -f ${config.home.homeDirectory}/.config/sops/age/keys.txt ]; then
           mkdir -p ${config.home.homeDirectory}/.config/secrets
-          SOPS_AGE_KEY_FILE=${config.home.homeDirectory}/.config/sops/age/keys.txt ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/test.age} > ${config.home.homeDirectory}/.config/secrets/test-secret.yaml
+          export SOPS_AGE_KEY_FILE=${config.home.homeDirectory}/.config/sops/age/keys.txt 
+
+          # create .sopsrc
+          echo "Creating .sopsrc file..."
+          echo "ageKeyFile: ${config.home.homeDirectory}/.config/sops/age/keys.txt" > ${config.home.homeDirectory}/.sopsrc
+
+          # Test secrets
+          ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/test.age} > ${config.home.homeDirectory}/.config/secrets/test-secret.yaml
+
+          ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/wakatime.age} > ${config.home.homeDirectory}/.wakatime.cfg
+          # Decrypt secrets
           echo "Decryption completed."
         else
           echo "Decryption failed, add your age key."
+          echo "Please add your age key to ${config.home.homeDirectory}/.config/sops/age/keys.txt"
           exit 1
         fi
+      '';
+
+      # Add experimental features to nix commands during activation
+      enableExperimentalFeatures = lib.hm.dag.entryBefore ["installPackages"] ''
+        export NIX_CONFIG="experimental-features = nix-command flakes"
       '';
 
       cleanupHammerspoon = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
@@ -138,6 +154,7 @@
       SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
       ZSH_WAKATIME_PROJECT_DETECTION = "true"; # enable project detection
       WAKATIME_HOME = "${config.home.homeDirectory}/.wakatime";
+      NIX_CONFIG = "experimental-features = nix-command flakes";
     };
   };
 
@@ -170,7 +187,7 @@
         ls = "eza -l";
         ll = "eza -la";
         da = "direnv allow";
-        nud = "darwin-rebuild switch --flake ~/dotnix";
+        nud = "nix --extra-experimental-features \"nix-command flakes\" run nix-darwin -- switch --flake ~/dotnix";
         showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
         showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
         showspaces = "yabai -m query --spaces | jq -r '.[].label'";

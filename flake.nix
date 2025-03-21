@@ -53,6 +53,46 @@
           {
             _module.args = { inherit inputs; };
             home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = { inherit inputs; };
+              sharedModules = [({ lib, pkgs, ... }: {
+                nix.enable = lib.mkForce false;  # Disable nix management in home-manager
+                home.enableNixpkgsReleaseCheck = false;  # Prevent version mismatch warnings
+                home.packages = with pkgs; [
+                  # Core system utilities
+                  coreutils
+                  findutils
+                  gnused
+                  gnutar
+                  gzip
+                  # Your original packages
+                  amber
+                  devenv
+                  markdown-oxide
+                  nixd
+                  ollama
+                  ripgrep
+                  smartcat
+                  gnupg
+                  sops
+                  age
+                  bws
+                  oh-my-zsh
+                  fish
+                  wakatime
+                  (python3.withPackages (ps: with ps; [
+                    psutil
+                    thefuck
+                  ]))
+                  uv
+                  wakatime-cli
+                  jankyborders
+                  sketchybar
+                  jq
+                  pkgs.nerd-fonts.jetbrains-mono
+                ];
+              })];
               users.${user} = import ./home-manager;
             };
             users.users.${user}.home = "/Users/${user}";
@@ -89,9 +129,12 @@
             # Minimal config to bootstrap the system
             nixpkgs.config.allowUnfree = true;
             services.nix-daemon.enable = false;  # Let Determinate Systems handle this
-            nix.settings = {
-              experimental-features = [ "nix-command" "flakes" ];
-              trusted-users = [ "root" "@admin" "@wheel" ];
+            nix = {
+              enable = false;
+              settings = {
+                experimental-features = [ "nix-command" "flakes" ];
+                trusted-users = [ "root" "@admin" "@wheel" ];
+              };
             };
             system.stateVersion = 4;
           })
