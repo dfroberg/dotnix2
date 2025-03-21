@@ -74,6 +74,7 @@
 
     activation = {
       decryptSecrets = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        mkdir -p ${config.home.homeDirectory}/.config/sops/age
         echo "Decrypting secrets..."
         if [ -f ${config.home.homeDirectory}/.config/sops/age/keys.txt ]; then
           mkdir -p ${config.home.homeDirectory}/.config/secrets
