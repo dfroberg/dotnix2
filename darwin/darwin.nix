@@ -100,11 +100,10 @@
   
   # Auto upgrade nix package and the daemon service.
   nix = {
-    enable = false;  # Allow Determinate Systems to manage Nix
-    package = pkgs.nix;
+    enable = false;  # Let Determinate Systems handle this
     settings = {
-      "extra-experimental-features" = [ "nix-command" "flakes" ];
-      "extra-platforms" = [ "x86_64-darwin" "aarch64-darwin"];
+      experimental-features = [ "nix-command" "flakes" ];
+      trusted-users = [ "root" "@admin" "@wheel" ];
     };
   };
 

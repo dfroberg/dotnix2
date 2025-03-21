@@ -89,7 +89,10 @@
             # Minimal config to bootstrap the system
             nixpkgs.config.allowUnfree = true;
             services.nix-daemon.enable = false;  # Let Determinate Systems handle this
-            nix.settings.experimental-features = [ "nix-command" "flakes" ];
+            nix.settings = {
+              experimental-features = [ "nix-command" "flakes" ];
+              trusted-users = [ "root" "@admin" "@wheel" ];
+            };
             system.stateVersion = 4;
           })
         ];
