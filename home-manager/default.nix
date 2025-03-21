@@ -53,7 +53,10 @@
       oh-my-zsh
       fish
       wakatime
-      thefuck
+      (python3.withPackages (ps: with ps; [
+        psutil
+        thefuck
+      ]))
       uv
       wakatime-cli
       jankyborders
