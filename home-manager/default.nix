@@ -100,6 +100,17 @@
           ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/test.age} > ${config.home.homeDirectory}/.config/secrets/test-secret.yaml
 
           ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/wakatime.age} > ${config.home.homeDirectory}/.wakatime.cfg
+
+          # Decrypt and setup GPG files
+          echo "Setting up GPG configuration..."
+          mkdir -p ${config.home.homeDirectory}/.gnupg
+          chmod 700 ${config.home.homeDirectory}/.gnupg
+          ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/gnupg/gnupg.tar.gz.age} > /tmp/gnupg.tar.gz
+          cd ${config.home.homeDirectory}/.gnupg && ${pkgs.gnutar}/bin/tar xzf /tmp/gnupg.tar.gz
+          rm /tmp/gnupg.tar.gz
+          chmod 700 ${config.home.homeDirectory}/.gnupg/*
+          chmod 600 ${config.home.homeDirectory}/.gnupg/*.conf
+
           # Decrypt secrets
           echo "Decryption completed."
         else
