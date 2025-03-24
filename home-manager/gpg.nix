@@ -10,8 +10,8 @@
   services.gpg-agent = {
     enable = true;
     enableSshSupport = true;
+    pinentryPackage = pkgs.pinentry_mac;
     defaultCacheTtl = 3600;
     maxCacheTtl = 7200;
-    pinentryFlavor = "mac";
   };
 } 
