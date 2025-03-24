@@ -54,15 +54,15 @@
                   src = aerospace;
 
                   buildInputs = with final; [
-                    swift
+                    swift_5_9
                     swiftPackages.swiftpm
                     final.darwin.apple_sdk.frameworks.AppKit
                     final.darwin.apple_sdk.frameworks.Foundation
                   ];
 
                   buildPhase = ''
-                    # Update Swift tools version to 5.8.0
-                    sed -i.bak 's/swift-tools-version: 6.0/swift-tools-version: 5.8.0/' Package.swift
+                    # Update Swift tools version to 5.9.0
+                    sed -i.bak 's/swift-tools-version: 6.0/swift-tools-version: 5.9.0/' Package.swift
                     # Delete the Package.resolved file
                     rm -f Package.resolved
                     swift build --configuration release --disable-sandbox
