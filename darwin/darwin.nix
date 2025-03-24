@@ -14,6 +14,21 @@
     [
       pkgs.gzip # GNU compression utility
       pkgs.home-manager
+      (pkgs.stdenv.mkDerivation {
+        name = "aerospace";
+        version = "0.17.1-Beta";
+        src = pkgs.fetchurl {
+          url = "https://github.com/nikitabobko/AeroSpace/releases/download/v0.17.1-Beta/AeroSpace-v0.17.1-Beta.zip";
+          sha256 = "15052621779bcf5adccba5da5e8267b27c845d6d690277383f84a383b18651e1";
+        };
+        nativeBuildInputs = [ pkgs.unzip ];
+        installPhase = ''
+          mkdir -p $out/Applications $out/bin
+          cp -r AeroSpace-v0.17.1-Beta/AeroSpace.app $out/Applications/
+          cp AeroSpace-v0.17.1-Beta/bin/aerospace $out/bin/
+          chmod +x $out/bin/aerospace
+        '';
+      })
       pkgs.fzf # Fuzzy finder
       pkgs.pet # Snippet manager
       pkgs.lazydocker # Docker TUI
@@ -165,7 +180,7 @@
     enable = true;
 
     taps = [
-      "nikitabobko/homebrew-tap"
+      # Removing the tap since we're installing manually
     ];
 
     brews = [
@@ -188,7 +203,7 @@
 
     casks = [
       "1password"
-      "nikitabobko/tap/aerospace"
+      # Removing aerospace from casks since we're installing manually
       "bartender"
       "fantastical"
       "firefox"
