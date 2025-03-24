@@ -1,19 +1,11 @@
 { config, pkgs, lib, ... }:
 {
   programs.gpg = {
-    enable = true;
-    settings = {
-      trust-model = "tofu+pgp";
-    };
-    homedir = "${config.home.homeDirectory}/.gnupg";
+    enable = false;
   };
 
   services.gpg-agent = {
-    enable = true;
-    enableSshSupport = true;
-    pinentryPackage = pkgs.pinentry_mac;
-    defaultCacheTtl = 3600;
-    maxCacheTtl = 7200;
+    enable = false;
   };
 
   home.activation.setupGpg = lib.hm.dag.entryAfter ["writeBoundary"] ''
