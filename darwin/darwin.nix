@@ -14,23 +14,6 @@
     [
       pkgs.gzip # GNU compression utility
       pkgs.home-manager
-      (pkgs.stdenv.mkDerivation {
-        name = "aerospace";
-        version = "0.17.1-Beta";
-        src = pkgs.fetchurl {
-          url = "https://github.com/nikitabobko/AeroSpace/releases/download/v0.17.1-Beta/AeroSpace-v0.17.1-Beta.zip";
-          sha256 = "15052621779bcf5adccba5da5e8267b27c845d6d690277383f84a383b18651e1";
-        };
-        nativeBuildInputs = [ pkgs.unzip ];
-        installPhase = ''
-          mkdir -p $out/Applications
-          unzip $src
-          mv AeroSpace.app $out/Applications/
-          mkdir -p $out/bin
-          mv bin/aerospace $out/bin/
-          chmod +x $out/bin/aerospace
-        '';
-      })
       pkgs.fzf # Fuzzy finder
       pkgs.pet # Snippet manager
       pkgs.lazydocker # Docker TUI
@@ -172,26 +155,6 @@
         
         # Window management hotkeys can go here
       '';
-    };
-    aerospace = {
-      enable = true;  # Enable AeroSpace service
-      package = pkgs.stdenv.mkDerivation {
-        name = "aerospace";
-        version = "0.17.1-Beta";
-        src = pkgs.fetchurl {
-          url = "https://github.com/nikitabobko/AeroSpace/releases/download/v0.17.1-Beta/AeroSpace-v0.17.1-Beta.zip";
-          sha256 = "15052621779bcf5adccba5da5e8267b27c845d6d690277383f84a383b18651e1";
-        };
-        nativeBuildInputs = [ pkgs.unzip ];
-        installPhase = ''
-          mkdir -p $out/Applications
-          unzip $src
-          mv AeroSpace.app $out/Applications/
-          mkdir -p $out/bin
-          mv bin/aerospace $out/bin/
-          chmod +x $out/bin/aerospace
-        '';
-      };
     };
   };
 
