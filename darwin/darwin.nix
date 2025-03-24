@@ -24,9 +24,9 @@
         nativeBuildInputs = [ pkgs.unzip ];
         installPhase = ''
           mkdir -p $out/Applications $out/bin
-          cp -r AeroSpace-v0.17.1-Beta/AeroSpace.app $out/Applications/
-          cp AeroSpace-v0.17.1-Beta/bin/aerospace $out/bin/
-          chmod +x $out/bin/aerospace
+          ls -la
+          find . -type f -name "*.app"
+          find . -type f -name "aerospace"
         '';
       })
       pkgs.fzf # Fuzzy finder
