@@ -7,7 +7,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.05";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
@@ -55,6 +55,7 @@
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = true;
+              backupFileExtension = "backup";  # Add backup extension for conflicting files
               extraSpecialArgs = { inherit inputs; };
               sharedModules = [({ lib, pkgs, ... }: {
                 nix.enable = lib.mkForce false;  # Disable nix management in home-manager
