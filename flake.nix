@@ -63,6 +63,8 @@
                   buildPhase = ''
                     # Update Swift tools version to 5.8.0
                     sed -i.bak 's/swift-tools-version: 6.0/swift-tools-version: 5.8.0/' Package.swift
+                    # Delete the Package.resolved file
+                    rm -f Package.resolved
                     swift build --configuration release --disable-sandbox
                   '';
 
