@@ -23,17 +23,6 @@
     };
   };
 
-  launchd.agents.aerospace = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "${config.programs.aerospace-custom.package}/bin/aerospace" ];
-      KeepAlive = true;
-      RunAtLoad = true;
-      StandardOutPath = "/tmp/aerospace.log";
-      StandardErrorPath = "/tmp/aerospace.error.log";
-    };
-  };
-
   home = {
     stateVersion = "24.05"; # Updated to match home-manager version
     enableNixpkgsReleaseCheck = false;  # Disable version mismatch warning
@@ -69,11 +58,11 @@
       
       # Shell and environment
       oh-my-zsh
-      fish
       wakatime
       jankyborders
       sketchybar
       jq
+      eza
       pkgs.nerd-fonts.jetbrains-mono
       
       # Wakatime ZSH plugin
@@ -158,6 +147,70 @@
         target = ".config/yabai";
         recursive = true;
       };
+      ".config/karabiner/karabiner.json".text = builtins.toJSON {
+        global = {
+          check_for_updates_on_startup = true;
+          show_in_menu_bar = true;
+          show_profile_name_in_menu_bar = false;
+        };
+        profiles = [
+          {
+            name = "Default profile";
+            selected = true;
+            simple_modifications = [];
+            complex_modifications = {
+              parameters = {
+                "basic.simultaneous_threshold_milliseconds" = 50;
+                "basic.to_delayed_action_delay_milliseconds" = 500;
+                "basic.to_if_alone_timeout_milliseconds" = 1000;
+                "basic.to_if_held_down_threshold_milliseconds" = 500;
+                "mouse_motion_to_scroll.speed" = 100;
+              };
+              rules = [
+                {
+                  description = "Change caps_lock to command+control+option. Toggle Caps Lock when pressed alone";
+                  manipulators = [
+                    {
+                      from = {
+                        key_code = "caps_lock";
+                        modifiers.optional = ["any"];
+                      };
+                      parameters."basic.to_if_held_down_threshold_milliseconds" = 250;
+                      to_if_held_down = [
+                        {
+                          key_code = "left_option";
+                          modifiers = ["left_command" "left_control"];
+                        }
+                      ];
+                      to_delayed_action.to_if_canceled = [
+                        {
+                          key_code = "caps_lock";
+                        }
+                      ];
+                      to_if_alone = [
+                        {
+                          key_code = "caps_lock";
+                          repeat = false;
+                          halt = true;
+                        }
+                      ];
+                      type = "basic";
+                    }
+                  ];
+                }
+              ];
+            };
+            virtual_hid_keyboard = {
+              country_code = 0;
+              indicate_sticky_modifier_keys_state = true;
+              mouse_key_xy_scale = 100;
+              keyboard_type = "ansi";
+              keyboard_type_v2 = "ansi";
+              caps_lock_delay_milliseconds = 0;
+            };
+          }
+        ];
+      };
     };
     # activation.yabaisetup = lib.hm.dag.entryAfter ["writeBoundary"] ''
     #   echo "Running yabai activation..."
@@ -188,12 +241,14 @@
       XDG_STATE_HOME = "${config.home.homeDirectory}/.local/state";
       # Add local bin to PATH
       PATH = lib.concatStringsSep ":" [
-        "$HOME/.nix-profile/bin"  # User profile first
+        "/run/current-system/sw/bin"  # System binaries first
+        "$HOME/.nix-profile/bin"
         "${config.home.homeDirectory}/.local/bin"
-        "/run/current-system/sw/bin"
         "/nix/var/nix/profiles/default/bin"
         "$PATH"
       ];
+      # Set SHELL to the correct path
+      SHELL = "/run/current-system/sw/bin/zsh";
     };
   };
 
@@ -219,7 +274,21 @@
     
     zsh = {
       enable = true;
-      enableCompletion = false; # enabled in oh-my-zsh
+      enableCompletion = true;
+      enableAutosuggestions = true;
+      syntaxHighlighting.enable = true;
+      
+      oh-my-zsh = {
+        enable = true;
+        plugins = [
+          "git"
+          "kubectl"
+          "helm"
+          "docker"
+          "golang"
+        ];
+        theme = "terminalparty";
+      };
       
       initExtra = ''
         # Source nix profile
@@ -247,6 +316,27 @@
 
         # Ensure Homebrew is in PATH
         eval "$(/opt/homebrew/bin/brew shellenv)"
+
+        # History configuration
+        HISTSIZE="10000"
+        SAVEHIST="10000"
+        HISTFILE="$HOME/.zsh_history"
+        
+        setopt HIST_FCNTL_LOCK
+        unsetopt APPEND_HISTORY
+        setopt HIST_IGNORE_DUPS
+        unsetopt HIST_IGNORE_ALL_DUPS
+        unsetopt HIST_SAVE_NO_DUPS
+        unsetopt HIST_FIND_NO_DUPS
+        setopt HIST_IGNORE_SPACE
+        unsetopt HIST_EXPIRE_DUPS_FIRST
+        setopt SHARE_HISTORY
+        unsetopt EXTENDED_HISTORY
+
+        # Source wakatime plugin
+        if [[ -f "$HOME/.zsh/plugins/zsh-wakatime/zsh-wakatime.plugin.zsh" ]]; then
+          source "$HOME/.zsh/plugins/zsh-wakatime/zsh-wakatime.plugin.zsh"
+        fi
       '';
       
       shellAliases = {
@@ -259,32 +349,10 @@
         showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
         showspaces = "yabai -m query --spaces | jq -r '.[].label'";
         showdisplays = "yabai -m query --displays | jq -r '.[].name'";
-        yabaisetup = "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh";
-        aerospacesetup = "${config.home.homeDirectory}/dotnix/.config/aerospace/setup.sh";
-        aerospacereset = "${config.home.homeDirectory}/dotnix/.config/aerospace/reset.sh";
-        aerospaceinfo = "${config.home.homeDirectory}/dotnix/.config/aerospace/info.sh";
-      };
-      plugins = [
-        {
-          name = "zsh-wakatime";
-          src = pkgs.fetchFromGitHub {
-            owner = "wbingli";
-            repo = "zsh-wakatime";
-            rev = "master";
-            sha256 = "sha256-iMHPDz4QvaL3YdRd3vaaz1G4bj8ftRVD9cD0KyJVeAs=";
-          };
-        }
-      ];
-      oh-my-zsh = {
-        enable = true;
-        theme = "terminalparty";
-        plugins = [
-          "git"
-          "kubectl"
-          "helm"
-          "docker"
-          "golang"
-        ];
+        aerospaceinfo = "/Users/dannyfroberg/dotnix/.config/aerospace/info.sh";
+        aerospacereset = "/Users/dannyfroberg/dotnix/.config/aerospace/reset.sh";
+        aerospacesetup = "/Users/dannyfroberg/dotnix/.config/aerospace/setup.sh";
+        yabaisetup = "/Users/dannyfroberg/.config/yabai/yabaisetup.sh";
       };
     };
 
@@ -312,67 +380,6 @@
       extensions = with pkgs.vscode-extensions; [
         wakatime.vscode-wakatime
       ];
-    };
-
-    fish = {
-      enable = true;
-      interactiveShellInit = ''
-        # Disable greeting
-        set fish_greeting
-
-        # Ensure all nix paths are available first
-        fish_add_path --prepend --move /nix/var/nix/profiles/default/bin
-        fish_add_path --prepend --move /run/current-system/sw/bin
-        fish_add_path --prepend --move $HOME/.nix-profile/bin
-
-        # Initialize direnv
-        if command -v direnv >/dev/null 2>&1
-          direnv hook fish | source
-        end
-
-        # Initialize Homebrew
-        eval (/opt/homebrew/bin/brew shellenv)
-
-        # Initialize thefuck from Homebrew
-        if command -v thefuck >/dev/null
-          thefuck --alias | source
-        end
-      '';
-      
-      shellAliases = {
-        # Inherit all ZSH aliases
-        asl = "aws sso login";
-        ls = "eza -l";
-        ll = "eza -la";
-        da = "direnv allow";
-        nud = "nix --extra-experimental-features \"nix-command flakes\" run nix-darwin -- switch --flake ~/dotnix";
-        showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
-        showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
-        showspaces = "yabai -m query --spaces | jq -r '.[].label'";
-        showdisplays = "yabai -m query --displays | jq -r '.[].name'";
-        yabaisetup = "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh";
-        aerospacesetup = "${config.home.homeDirectory}/dotnix/.config/aerospace/setup.sh";
-        aerospacereset = "${config.home.homeDirectory}/dotnix/.config/aerospace/reset.sh";
-        aerospaceinfo = "${config.home.homeDirectory}/dotnix/.config/aerospace/info.sh";
-      };
-      
-      shellInit = ''
-        # Set environment variables
-        set -gx EDITOR nvim
-        set -gx VISUAL $EDITOR
-        
-        # Ensure nix experimental features are enabled
-        set -gx NIX_CONFIG "experimental-features = nix-command flakes"
-        
-        # Set wakatime variables
-        set -gx ZSH_WAKATIME_PROJECT_DETECTION "true"
-        set -gx WAKATIME_HOME "$HOME/.wakatime"
-
-        # Add nix paths to fish_user_paths to ensure persistence
-        contains /nix/var/nix/profiles/default/bin $fish_user_paths; or set -U fish_user_paths /nix/var/nix/profiles/default/bin $fish_user_paths
-        contains /run/current-system/sw/bin $fish_user_paths; or set -U fish_user_paths /run/current-system/sw/bin $fish_user_paths
-        contains $HOME/.nix-profile/bin $fish_user_paths; or set -U fish_user_paths $HOME/.nix-profile/bin $fish_user_paths
-      '';
     };
   };
 

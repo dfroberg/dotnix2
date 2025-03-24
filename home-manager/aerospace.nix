@@ -48,9 +48,9 @@ in {
       enable = true;
       config = {
         ProgramArguments = [
-          "${cfg.package}/bin/aerospace"
-          "--config-path"
-          "${config.home.homeDirectory}/.config/aerospace/aerospace.toml"
+          "/bin/sh"
+          "-c"
+          "/bin/wait4path /nix/store && exec ${cfg.package}/Applications/AeroSpace.app/Contents/MacOS/AeroSpace --config-path ${config.home.homeDirectory}/.config/aerospace/aerospace.toml"
         ];
         KeepAlive = true;
         RunAtLoad = true;
