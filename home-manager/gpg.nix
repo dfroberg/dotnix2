@@ -5,7 +5,7 @@
     settings = {
       trust-model = "tofu+pgp";
     };
-    homedir = "~/.gnupg";
+    homedir = "${config.home.homeDirectory}/.gnupg";
   };
 
   services.gpg-agent = {
