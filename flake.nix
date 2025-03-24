@@ -54,7 +54,7 @@
                   src = aerospace;
 
                   buildInputs = with final; [
-                    swift
+                    swift_6_0
                     swiftPackages.swiftpm
                     final.darwin.apple_sdk.frameworks.AppKit
                     final.darwin.apple_sdk.frameworks.Foundation
