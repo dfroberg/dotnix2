@@ -9,6 +9,7 @@
     ./tmux.nix
     ./wezterm.nix
     ./aerospace.nix
+    ./gpg.nix
   ];
 
   nixpkgs = {
@@ -202,23 +203,6 @@
     starship.enable = true;
     zoxide.enable = true;
     
-    # Add GPG configuration
-    gpg = {
-      enable = true;
-      settings = {
-        trust-model = "tofu+pgp";
-      };
-    };
-
-    # Enable GPG agent
-    gpg-agent = {
-      enable = true;
-      enableSshSupport = true;
-      pinentryFlavor = "mac";
-      defaultCacheTtl = 3600;
-      maxCacheTtl = 7200;
-    };
-    
     aerospace-custom = {
       enable = true;
       package = pkgs.aerospace;
@@ -390,6 +374,9 @@
         contains $HOME/.nix-profile/bin $fish_user_paths; or set -U fish_user_paths $HOME/.nix-profile/bin $fish_user_paths
       '';
     };
+  };
+
+  services = {
   };
 }
 
