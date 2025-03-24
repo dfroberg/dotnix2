@@ -165,7 +165,7 @@
     enable = true;
 
     taps = [
-      "https://github.com/nikitabobko/homebrew-tap"
+      "nikitabobko/homebrew-tap"
     ];
 
     brews = [
