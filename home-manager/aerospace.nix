@@ -47,7 +47,11 @@ in {
     launchd.agents.aerospace = {
       enable = true;
       config = {
-        ProgramArguments = [ "${cfg.package}/bin/aerospace" ];
+        ProgramArguments = [
+          "${cfg.package}/bin/aerospace"
+          "--config-path"
+          "${config.home.homeDirectory}/.config/aerospace/aerospace.toml"
+        ];
         KeepAlive = true;
         RunAtLoad = true;
         StandardOutPath = "/tmp/aerospace.log";
