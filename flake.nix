@@ -54,13 +54,13 @@
                   src = aerospace;
 
                   buildInputs = with final; [
-                    swift
+                    swift-frontend
                     final.darwin.apple_sdk.frameworks.AppKit
                     final.darwin.apple_sdk.frameworks.Foundation
                   ];
 
                   buildPhase = ''
-                    swift build --configuration release --disable-sandbox
+                    swift-frontend build --configuration release --disable-sandbox
                   '';
 
                   installPhase = ''
