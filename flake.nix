@@ -55,8 +55,8 @@
 
                   buildInputs = with final; [
                     swift
-                    darwin.apple_sdk.frameworks.AppKit
-                    darwin.apple_sdk.frameworks.Foundation
+                    final.darwin.apple_sdk.frameworks.AppKit
+                    final.darwin.apple_sdk.frameworks.Foundation
                   ];
 
                   buildPhase = ''
