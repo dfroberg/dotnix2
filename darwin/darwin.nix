@@ -184,6 +184,7 @@
 
     casks = [
       "1password"
+      "aerospace"
       "bartender"
       "fantastical"
       "firefox"

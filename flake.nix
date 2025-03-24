@@ -25,11 +25,6 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # aerospace - window manager for macOS
-    aerospace = {
-      url = "github:nikitabobko/AeroSpace";
-      flake = false;
-    };
   };
 
   # Add minimum Nix version requirement
@@ -38,51 +33,14 @@
     min-version = "2.18.1";  # Minimum version for Determinate Systems compatibility
   };
 
-  outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, aerospace, ... } @ inputs: let
+  outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, ... } @ inputs: let
     nixpkgs.config.allowUnfree = true;
     darwinSystem = {user, arch ? "aarch64-darwin"}:
       darwin.lib.darwinSystem {
         system = arch;
         modules = [
           ./darwin/darwin.nix
-          { nixpkgs.config.allowUnfree = true;
-            nixpkgs.overlays = [
-              (final: prev: {
-                aerospace = final.stdenv.mkDerivation {
-                  pname = "aerospace";
-                  version = "0.7.0";
-                  src = aerospace;
-
-                  buildInputs = with final; [
-                    swift
-                    swiftPackages.swiftpm
-                    final.darwin.apple_sdk.frameworks.AppKit
-                    final.darwin.apple_sdk.frameworks.Foundation
-                  ];
-
-                  buildPhase = ''
-                    # Update Swift tools version to 5.8.0 in both Package.swift files
-                    sed -i.bak 's/swift-tools-version: 6.0/swift-tools-version: 5.8.0/' Package.swift
-                    sed -i.bak 's/swift-tools-version: 5.9/swift-tools-version: 5.8.0/' ShellParserGenerated/Package.swift
-                    # Delete the Package.resolved files
-                    rm -f Package.resolved ShellParserGenerated/Package.resolved
-                    swift build --configuration release --disable-sandbox
-                  '';
-
-                  installPhase = ''
-                    mkdir -p $out/bin
-                    cp .build/release/aerospace $out/bin/
-                  '';
-
-                  meta = with final.lib; {
-                    description = "A tiling window manager for macOS";
-                    homepage = "https://github.com/nikitabobko/AeroSpace";
-                    platforms = platforms.darwin;
-                  };
-                };
-              })
-            ];
-          }
+          { nixpkgs.config.allowUnfree = true; }
           # Check nix-darwin version - 1.2 includes the fix for Homebrew --no-lock removal
           ({ lib, ... }: {
             assertions = [{
