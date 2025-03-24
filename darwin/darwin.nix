@@ -164,6 +164,10 @@
   homebrew = {
     enable = true;
 
+    taps = [
+      "nikitabobko/tap"
+    ];
+
     brews = [
       "awscli"
       "aws-vault"
@@ -184,7 +188,7 @@
 
     casks = [
       "1password"
-      "aerospace"
+      "nikitabobko/tap/aerospace"
       "bartender"
       "fantastical"
       "firefox"
