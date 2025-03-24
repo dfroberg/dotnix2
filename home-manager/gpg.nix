@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 {
   programs.gpg = {
     enable = true;
@@ -16,9 +16,10 @@
     maxCacheTtl = 7200;
   };
 
-  home.file.".gnupg" = {
-    source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.gnupg";
-    recursive = true;
-    mode = "0700";
-  };
+  home.activation.setupGpg = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    if [[ ! -d "$HOME/.gnupg" ]]; then
+      $DRY_RUN_CMD mkdir -p "$HOME/.gnupg"
+    fi
+    $DRY_RUN_CMD chmod 700 "$HOME/.gnupg"
+  '';
 } 
