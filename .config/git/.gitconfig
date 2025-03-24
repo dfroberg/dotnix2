@@ -20,6 +20,7 @@
   default = simple
 [commit]
   verbose = true
+  gpgsign = true
 [diff]
   algorithm = histogram
 [merge]
@@ -59,11 +60,13 @@
 [user]
   email = danny@froberg.org
   name = Danny Froberg
-  signingkey = AB539BAC6BBBFC24F796606A0F64CF7965AA1A1D
+  signingkey = ~/.ssh/identity
 [github]
   user = dfroberg
 [hub]
   protocol = ssh
+[gpg]
+  format = ssh
 [filter "lfs"]
   clean = git-lfs clean -- %f
   smudge = git-lfs smudge -- %f
