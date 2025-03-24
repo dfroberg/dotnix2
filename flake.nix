@@ -25,6 +25,11 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # aerospace - window manager for macOS
+    aerospace = {
+      url = "github:nikitabobko/AeroSpace";
+      flake = false;
+    };
   };
 
   # Add minimum Nix version requirement
@@ -33,14 +38,45 @@
     min-version = "2.18.1";  # Minimum version for Determinate Systems compatibility
   };
 
-  outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, ... } @ inputs: let
+  outputs = { nixpkgs, darwin, home-manager, nixos-wsl, agenix, aerospace, ... } @ inputs: let
     nixpkgs.config.allowUnfree = true;
     darwinSystem = {user, arch ? "aarch64-darwin"}:
       darwin.lib.darwinSystem {
         system = arch;
         modules = [
           ./darwin/darwin.nix
-          { nixpkgs.config.allowUnfree = true; }
+          { nixpkgs.config.allowUnfree = true;
+            nixpkgs.overlays = [
+              (final: prev: {
+                aerospace = final.stdenv.mkDerivation {
+                  pname = "aerospace";
+                  version = "0.7.0";
+                  src = aerospace;
+
+                  buildInputs = with final; [
+                    swift
+                    darwin.apple_sdk.frameworks.AppKit
+                    darwin.apple_sdk.frameworks.Foundation
+                  ];
+
+                  buildPhase = ''
+                    swift build --configuration release --disable-sandbox
+                  '';
+
+                  installPhase = ''
+                    mkdir -p $out/bin
+                    cp .build/release/aerospace $out/bin/
+                  '';
+
+                  meta = with final.lib; {
+                    description = "A tiling window manager for macOS";
+                    homepage = "https://github.com/nikitabobko/AeroSpace";
+                    platforms = platforms.darwin;
+                  };
+                };
+              })
+            ];
+          }
           # Check nix-darwin version - 1.2 includes the fix for Homebrew --no-lock removal
           ({ lib, ... }: {
             assertions = [{
