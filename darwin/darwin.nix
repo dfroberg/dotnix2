@@ -25,17 +25,9 @@
         installPhase = ''
           mkdir -p $out/Applications
           unzip $src
-          echo "Contents of current directory:"
-          ls -la
-          echo "Contents of AeroSpace-v0.17.1-Beta directory:"
-          ls -la AeroSpace-v0.17.1-Beta/
-          echo "Finding all .app files:"
-          find . -name "*.app"
-          echo "Finding aerospace binary:"
-          find . -name "aerospace"
-          mv AeroSpace-v0.17.1-Beta/*.app $out/Applications/
+          mv AeroSpace.app $out/Applications/
           mkdir -p $out/bin
-          mv AeroSpace-v0.17.1-Beta/aerospace $out/bin/
+          mv bin/aerospace $out/bin/
           chmod +x $out/bin/aerospace
         '';
       })
@@ -194,17 +186,9 @@
         installPhase = ''
           mkdir -p $out/Applications
           unzip $src
-          echo "Contents of current directory:"
-          ls -la
-          echo "Contents of AeroSpace-v0.17.1-Beta directory:"
-          ls -la AeroSpace-v0.17.1-Beta/
-          echo "Finding all .app files:"
-          find . -name "*.app"
-          echo "Finding aerospace binary:"
-          find . -name "aerospace"
-          mv AeroSpace-v0.17.1-Beta/*.app $out/Applications/
+          mv AeroSpace.app $out/Applications/
           mkdir -p $out/bin
-          mv AeroSpace-v0.17.1-Beta/aerospace $out/bin/
+          mv bin/aerospace $out/bin/
           chmod +x $out/bin/aerospace
         '';
       };
