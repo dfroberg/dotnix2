@@ -107,7 +107,7 @@
           mkdir -p ${config.home.homeDirectory}/.gnupg
           chmod 700 ${config.home.homeDirectory}/.gnupg
           ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/gnupg/gnupg.tar.gz.age} > /tmp/gnupg.tar.gz
-          cd ${config.home.homeDirectory}/.gnupg && ${pkgs.gnutar}/bin/tar xzf /tmp/gnupg.tar.gz
+          cd ${config.home.homeDirectory}/.gnupg && PATH="${pkgs.gzip}/bin:$PATH" ${pkgs.gnutar}/bin/tar xzf /tmp/gnupg.tar.gz
           rm /tmp/gnupg.tar.gz
           chmod 700 ${config.home.homeDirectory}/.gnupg/*
           chmod 600 ${config.home.homeDirectory}/.gnupg/*.conf
