@@ -54,13 +54,15 @@
                   src = aerospace;
 
                   buildInputs = with final; [
-                    swift_6_0
+                    swift
                     swiftPackages.swiftpm
                     final.darwin.apple_sdk.frameworks.AppKit
                     final.darwin.apple_sdk.frameworks.Foundation
                   ];
 
                   buildPhase = ''
+                    # Set Swift tools version to 6.0
+                    echo "// swift-tools-version:6.0" > Package.swift
                     swift build --configuration release --disable-sandbox
                   '';
 
