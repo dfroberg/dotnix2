@@ -25,9 +25,9 @@
         installPhase = ''
           mkdir -p $out/Applications
           unzip $src
-          mv *.app $out/Applications/
+          mv AeroSpace-v0.17.1-Beta/*.app $out/Applications/
           mkdir -p $out/bin
-          mv aerospace $out/bin/
+          mv AeroSpace-v0.17.1-Beta/aerospace $out/bin/
           chmod +x $out/bin/aerospace
         '';
       })
@@ -186,9 +186,9 @@
         installPhase = ''
           mkdir -p $out/Applications
           unzip $src
-          mv *.app $out/Applications/
+          mv AeroSpace-v0.17.1-Beta/*.app $out/Applications/
           mkdir -p $out/bin
-          mv aerospace $out/bin/
+          mv AeroSpace-v0.17.1-Beta/aerospace $out/bin/
           chmod +x $out/bin/aerospace
         '';
       };
