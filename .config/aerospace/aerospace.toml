@@ -56,12 +56,13 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 #                 Monitor pattern is the same as for 'workspace-to-monitor-force-assignment'.
 #                 See: https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
 [gaps]
-inner.horizontal = 18
-inner.vertical =   18
-outer.left =       18
-outer.bottom =     18
-outer.top =        18
-outer.right =      18
+# Gaps configuration with monitor-specific patterns
+inner.horizontal = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+inner.vertical = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+outer.left = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+outer.bottom = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+outer.top = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+outer.right = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
 
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -186,15 +187,16 @@ cmd-alt-ctrl-shift-up = ['join-with up', 'mode main']
 cmd-alt-ctrl-shift-right = ['join-with right', 'mode main']
 
 [workspace-to-monitor-force-assignment]
-1 = ['secondary', 'main']
-2 = ['secondary', 'main']
-3 = ['secondary', 'main']
-4 = ['secondary', 'main']
-5 = ['secondary', 'main']
-6 = ['secondary', 'main']
-7 = ['secondary', 'main']
-8 = ['secondary', 'main']
-9 = ['secondary', 'main']
+# Work setup - Built-in display as main, DELL P2725HE as secondary, DELL P2421 as tertiary
+1 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+2 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+3 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+4 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+5 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+6 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+7 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+8 = ["DELL P2725HE"]
+9 = ["DELL P2421"]
 
 [[on-window-detected]]
 if.app-id = 'com.github.wez.wezterm'
