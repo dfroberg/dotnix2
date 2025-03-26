@@ -31,12 +31,6 @@
   insteadOf = https://git.tain.com/
   insteadOf = git@git.tain.com:
 
-[includeIf "hasconfig:remote.*.url:*git.tain.com*"]
-  path = ~/.gitconfig-tain
-
-[includeIf "hasconfig:remote.*.url:*git@git.tain.com:*"]
-  path = ~/.gitconfig-tain
-
 [alias]
   st = status --short --branch
   co = checkout
@@ -67,10 +61,14 @@
   lf = log --first-parent --oneline
   my-commits = log --author='Danny Froberg' --author-date-order --date=format:'%a %b %d %r' --format='%h | %ad | %s'
   jump = "!$(brew --prefix git)/share/git-core/contrib/git-jump/git-jump"
+
 [user]
   email = danny@froberg.org
   name = Danny Froberg
   signingkey = ~/.ssh/identity
+
+[includeIf "gitdir:/Users/dannyfroberg/eeze/**/.git"]
+  path = ~/.gitconfig-tain
 
 [github]
   user = dfroberg
