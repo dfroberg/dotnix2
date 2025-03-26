@@ -27,13 +27,16 @@
   conflictstyle = zdiff3
 [url "git@github.com:"]
   insteadOf = "https://github.com"
-[url "git@git.tain.com:"]
-    insteadOf = https://git.tain.com/
-    insteadOf = git@git.tain.com:
-
 [url "ssh://git@git.tain.com:2222/"]
-    pushInsteadOf = git@git.tain.com:
-    pushInsteadOf = https://git.tain.com/
+  insteadOf = https://git.tain.com/
+  insteadOf = git@git.tain.com:
+
+[includeIf "hasconfig:remote.*.url:*git.tain.com*"]
+  path = ~/.gitconfig-tain
+
+[includeIf "hasconfig:remote.*.url:*git@git.tain.com:*"]
+  path = ~/.gitconfig-tain
+
 [alias]
   st = status --short --branch
   co = checkout
@@ -68,9 +71,6 @@
   email = danny@froberg.org
   name = Danny Froberg
   signingkey = ~/.ssh/identity
-
-[includeIf "hasconfig:remote.*.url:*git.tain.com*"]
-  path = ~/.gitconfig-tain
 
 [github]
   user = dfroberg
