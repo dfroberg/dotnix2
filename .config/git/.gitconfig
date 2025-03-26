@@ -67,8 +67,8 @@
   name = Danny Froberg
   signingkey = ~/.ssh/identity
 
-[includeIf "gitdir:/Users/dannyfroberg/eeze/**/.git"]
-  path = ~/.gitconfig-tain
+[include]
+  path = ~/.gitconfig-custom
 
 [github]
   user = dfroberg
