@@ -12,17 +12,6 @@
     ./gpg.nix
   ];
 
-  nixpkgs = {
-    config = {
-      allowUnfree = true;
-      # allowUnfreePredicate = (_: true);
-      allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-        "ec2-api-tools"
-        "bws"
-      ];
-    };
-  };
-
   home = {
     stateVersion = "24.05"; # Updated to match home-manager version
     enableNixpkgsReleaseCheck = false;  # Disable version mismatch warning
@@ -275,7 +264,7 @@
     zsh = {
       enable = true;
       enableCompletion = true;
-      enableAutosuggestions = true;
+      autosuggestion.enable = true;
       syntaxHighlighting.enable = true;
       
       oh-my-zsh = {
@@ -377,9 +366,13 @@
 
     vscode = {
       enable = true;
-      extensions = with pkgs.vscode-extensions; [
-        wakatime.vscode-wakatime
-      ];
+      profiles = {
+        default = {
+          extensions = with pkgs.vscode-extensions; [
+            wakatime.vscode-wakatime
+          ];
+        };
+      };
     };
   };
 
