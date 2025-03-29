@@ -39,7 +39,15 @@
       ollama
       ripgrep
       smartcat
-      
+      ec2-api-tools
+      awscli2
+      aws-vault
+      aws-iam-authenticator
+      kubectl
+      kubectx
+      k9s
+      yarn
+      nodePackages.pnpm
       # Security tools
       sops
       age
