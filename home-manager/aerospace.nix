@@ -13,18 +13,6 @@ in {
       default = pkgs.aerospace;
       description = "The Aerospace package to use.";
     };
-    
-    settings = mkOption {
-      type = types.attrs;
-      default = {};
-      description = "Aerospace configuration settings.";
-    };
-    
-    configFile = mkOption {
-      type = types.nullOr types.path;
-      default = null;
-      description = "Path to a static aerospace.toml configuration file.";
-    };
   };
   
   config = mkIf cfg.enable {

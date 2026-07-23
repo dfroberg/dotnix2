@@ -72,7 +72,6 @@
                   devenv
                   markdown-oxide
                   nixd
-                  ollama
                   ripgrep
                   smartcat
                   gnupg
@@ -149,6 +148,12 @@
         arch = "aarch64-darwin";
       };
       "Admins-MacBook-Pro" = darwinSystem {
+        user = "dannyfroberg";
+        arch = "aarch64-darwin";
+      };
+      # Corp renamed this machine's hostname; alias to the same config so
+      # hostname-based `darwin-rebuild switch --flake ~/dotnix` (the `nud` alias) resolves.
+      "EZ-MBP-GD4RPHKWL4" = darwinSystem {
         user = "dannyfroberg";
         arch = "aarch64-darwin";
       };

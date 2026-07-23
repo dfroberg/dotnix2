@@ -10,6 +10,7 @@
     ./wezterm.nix
     ./aerospace.nix
     ./gpg.nix
+    ./vpn.nix
   ];
 
   home = {
@@ -36,7 +37,6 @@
       amber
       markdown-oxide
       nixd
-      ollama
       ripgrep
       smartcat
       ec2-api-tools
@@ -255,18 +255,11 @@
     starship.enable = true;
     zoxide.enable = true;
     
+    # Real aerospace config lives in the symlinked .config/aerospace/aerospace.toml
+    # (see aerospace.nix). `settings` was never consumed by the module — removed.
     aerospace-custom = {
       enable = true;
       package = pkgs.aerospace;
-      settings = {
-        start-at-login = true;
-        enable-normalization-flatten-containers = true;
-        enable-normalization-opposite-orientation-for-nested-containers = true;
-        accordion-padding = 30;
-        default-root-container-layout = "tiles";
-        default-root-container-orientation = "auto";
-        on-focused-monitor-changed = ["move-mouse monitor-lazy-center"];
-      };
     };
     
     zsh = {

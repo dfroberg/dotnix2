@@ -14,8 +14,10 @@ after-login-command = []
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
 after-startup-command = []
 
-# Start AeroSpace at login
-start-at-login = true
+# Start AeroSpace at login is handled by the home-manager launchd agent
+# (org.nix-community.home.aerospace, KeepAlive). Keep this false so AeroSpace
+# does NOT also self-register bobko.aerospace -> otherwise it launches twice.
+start-at-login = false
 
 # Disable macOS "Hide application" feature to prevent it from interfering with cmd+h
 automatically-unhide-macos-hidden-apps = true
@@ -45,7 +47,7 @@ key-mapping.preset = 'qwerty'
 # Drop it from your config, if you don't like this behavior
 # See https://nikitabobko.github.io/AeroSpace/guide#on-focus-changed-callbacks
 # See https://nikitabobko.github.io/AeroSpace/commands#move-mouse
-on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+# on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 # on-focus-changed = "move-mouse window-lazy-center"
 
 # Gaps between windows (inner-*) and between monitor edges (outer-*).
