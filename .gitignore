@@ -1,5 +1,9 @@
 local.nix
 
+# Secrets — never commit the real age private key.
+# The real key lives ONLY at ~/.config/sops/age/keys.txt (outside this repo).
+.config/sops/age/keys.txt
+
 # Devenv
 .devenv*
 devenv.local.nix

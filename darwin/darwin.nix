@@ -181,6 +181,7 @@
       "bottom" # Better top/htop
       "difftastic" # Better diff
       "hyperfine" # Benchmarking tool
+      "openfortivpn" # SSL-VPN client used by vpn-connect/vpn-disconnect (deps: openssl@3, ca-certificates)
     ];
 
     casks = [
@@ -209,6 +210,7 @@
       cask "tailscale-app", args: { adopt: true }
       cask "slack", args: { adopt: true }
       cask "bitwarden", args: { adopt: true }
+      cask "shottr", args: { adopt: true }
     '';
   };
 
