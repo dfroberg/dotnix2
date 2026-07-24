@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, ... }:
 
 {
   nixpkgs = {
@@ -307,110 +307,6 @@
 auth       sufficient     pam_tid.so
 ' /etc/pam.d/sudo
         fi
-
-        # Configure Karabiner-Elements
-        KARABINER_USERS="/Users/${config.system.primaryUser} /var/root"
-        
-        # Add a log function
-        log() {
-          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-        }
-
-        # Create temp file with rules content
-        TEMP_FILE=''$(mktemp)
-        cat > "''$TEMP_FILE" << 'EOF'
-{
-    "description": "Change caps_lock to command+control+option. Toggle Caps Lock when pressed alone.",
-    "enabled": false,
-    "manipulators": [
-        {
-            "from": {
-                "key_code": "caps_lock",
-                "modifiers": { "optional": ["any"] }
-            },
-            "parameters": {
-              "basic.to_if_held_down_threshold_milliseconds": 250
-            },
-            "to_if_held_down": [
-                {
-                  "key_code": "left_option",
-                  "modifiers": ["left_command", "left_control"]
-                }
-            ],
-            "to_delayed_action": {
-              "to_if_canceled": [
-                {
-                  "key_code": "caps_lock"
-                }
-              ]
-            },
-            "to_if_alone": [
-                {
-                    "key_code": "caps_lock",
-                    "repeat": false,
-                    "halt": true
-                }
-            ],
-            "type": "basic"
-        }
-    ]
-}
-EOF
-
-        # Loop through each user directory
-        for USER_HOME in ''${KARABINER_USERS}; do
-          KARABINER_CONFIG_DIR="''${USER_HOME}/.config/karabiner"
-          KARABINER_FILE="''${KARABINER_CONFIG_DIR}/karabiner.json"
-          log "Configuring Karabiner-Elements at ''${KARABINER_FILE}"
-
-          # Ensure directory exists
-          mkdir -p "''$KARABINER_CONFIG_DIR"
-
-          # Create default config if it doesn't exist
-          if [ ! -f "''$KARABINER_FILE" ]; then
-            echo '{"profiles":[{"name":"Default profile","selected":true,"virtual_hid_keyboard":{"keyboard_type_v2":"ansi"},"complex_modifications":{"rules":[]}}]}' > "''$KARABINER_FILE"
-          fi
-
-          # Check if jq is available
-          if ! command -v jq &> /dev/null; then
-            echo "Warning: jq not found, skipping Karabiner configuration update"
-          else
-            # Update the rules using jq
-            RULES=''$(cat "''$TEMP_FILE")
-            jq --arg rules "''$RULES" '
-              .profiles[0].complex_modifications.rules = (
-                if (.profiles[0].complex_modifications.rules | length > 0) then
-                  (.profiles[0].complex_modifications.rules | map(
-                    if .description == "Section (§) to a Hyper Key" then
-                      ($rules | fromjson)
-                    else
-                      .
-                    end
-                  ))
-                else
-                  [($rules | fromjson)]
-                end
-              )
-            ' "''$KARABINER_FILE" > "''${KARABINER_FILE}.tmp" && mv "''${KARABINER_FILE}.tmp" "''$KARABINER_FILE" || echo "Error: Failed to update Karabiner configuration"
-          fi
-
-          # Check common installation paths
-          for cli_path in "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli" "/Applications/Karabiner-Elements.app/Contents/MacOS/karabiner_cli"; do
-            if [ -x "''${cli_path}" ]; then
-              KARABINER_CLI="''${cli_path}"
-              break
-            fi
-          done
-
-          if [ -n "''${KARABINER_CLI}" ]; then
-            # Use the CLI
-            "''${KARABINER_CLI}" --select-profile 'Default profile' || true
-          else
-            echo "Warning: karabiner_cli not found"
-          fi
-        done
-
-        rm "''$TEMP_FILE"
 
         # Add Warp to admin group
         # echo "Adding Warp to admin group..."
