@@ -349,7 +349,9 @@
         ls = "eza -l";
         ll = "eza -la";
         da = "direnv allow";
-        nud = "nix --extra-experimental-features \"nix-command flakes\" run nix-darwin -- switch --flake ~/dotnix";
+        # newer nix-darwin requires activation as root; run darwin-rebuild (from the
+        # flake's pinned nix-darwin) directly under sudo. Hostname resolves the config.
+        nud = "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/dotnix";
         showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
         showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
         showspaces = "yabai -m query --spaces | jq -r '.[].label'";
