@@ -21,6 +21,8 @@
       "$HOME/.nix-profile/bin"  # User profile first
       "/run/current-system/sw/bin"
       "/nix/var/nix/profiles/default/bin"
+      "${config.home.homeDirectory}/.grok/bin"        # grok CLI (ported from pre-HM .zshrc)
+      "${config.home.homeDirectory}/.groundcover/bin" # groundcover CLI (ported from pre-HM .zshrc)
     ];
 
     # The home.packages option allows you to install Nix packages into your
@@ -224,6 +226,7 @@
     # '';
     sessionVariables = {
       EDITOR = "nvim";
+      NODE_OPTIONS = "--max-old-space-size=12288"; # ported from pre-HM .zshrc
       SOPS_AGE_KEY_FILE = "${config.home.homeDirectory}/.config/sops/age/keys.txt";
       ZSH_WAKATIME_PROJECT_DETECTION = "true"; # enable project detection
       WAKATIME_HOME = "${config.home.homeDirectory}/.wakatime";
@@ -326,10 +329,19 @@
         if [[ -f "$HOME/.zsh/plugins/zsh-wakatime/zsh-wakatime.plugin.zsh" ]]; then
           source "$HOME/.zsh/plugins/zsh-wakatime/zsh-wakatime.plugin.zsh"
         fi
+
+        # nvm (node version manager) — ported from pre-HM .zshrc
+        export NVM_DIR="$HOME/.config/nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+
+        # grok CLI completions — ported from pre-HM .zshrc
+        fpath=(~/.grok/completions/zsh $fpath)
       '';
       
       shellAliases = {
         asl = "aws sso login";
+        claude = "NODE_OPTIONS=\"--max-old-space-size=12288\" claude"; # ported from pre-HM .zshrc
         ls = "eza -l";
         ll = "eza -la";
         da = "direnv allow";
