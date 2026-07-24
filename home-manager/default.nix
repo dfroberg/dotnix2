@@ -350,10 +350,10 @@
         showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
         showspaces = "yabai -m query --spaces | jq -r '.[].label'";
         showdisplays = "yabai -m query --displays | jq -r '.[].name'";
-        aerospaceinfo = "/Users/dannyfroberg/dotnix/.config/aerospace/info.sh";
-        aerospacereset = "/Users/dannyfroberg/dotnix/.config/aerospace/reset.sh";
-        aerospacesetup = "/Users/dannyfroberg/dotnix/.config/aerospace/setup.sh";
-        yabaisetup = "/Users/dannyfroberg/.config/yabai/yabaisetup.sh";
+        aerospaceinfo = "${config.home.homeDirectory}/dotnix/.config/aerospace/info.sh";
+        aerospacereset = "${config.home.homeDirectory}/dotnix/.config/aerospace/reset.sh";
+        aerospacesetup = "${config.home.homeDirectory}/dotnix/.config/aerospace/setup.sh";
+        yabaisetup = "${config.home.homeDirectory}/.config/yabai/yabaisetup.sh";
       };
     };
 
