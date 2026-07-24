@@ -61,10 +61,15 @@ key-mapping.preset = 'qwerty'
 # Gaps configuration with monitor-specific patterns
 inner.horizontal = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
 inner.vertical = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
-outer.left = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+# 49" super-ultrawide (5120x1440): confine tiling to a centered ~1/3 column so a
+# LONE window is ~1706px instead of the full 5120. TRADE-OFF: 2-3 windows now tile
+# *within* that third, so they get cramped (aerospace can't reserve empty columns).
+# Tune the 1700: lower toward ~1280 for a ~1/2 column (2 windows comfortable),
+# or back to 24 to restore full-width tiling.
+outer.left = [{ monitor."5120x1440" = 1700 }, { monitor."2560x1440" = 18 }, 12]
 outer.bottom = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
 outer.top = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
-outer.right = [{ monitor."5120x1440" = 24 }, { monitor."2560x1440" = 18 }, 12]
+outer.right = [{ monitor."5120x1440" = 1700 }, { monitor."2560x1440" = 18 }, 12]
 
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
