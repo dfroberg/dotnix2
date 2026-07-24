@@ -11,7 +11,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     darwin = {
-      url = "github:LnL7/nix-darwin/2d9b63316926aa130a5a51136d93b9be28808f26";
+      url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nixos-wsl = {
@@ -40,7 +40,8 @@
         system = arch;
         modules = [
           ./darwin/darwin.nix
-          { nixpkgs.config.allowUnfree = true; }
+          # Required by nix-darwin (mid-2025+) for user-scoped system.defaults.* options.
+          { nixpkgs.config.allowUnfree = true; system.primaryUser = user; }
           # Check nix-darwin version - 1.2 includes the fix for Homebrew --no-lock removal
           ({ lib, ... }: {
             assertions = [{
@@ -80,10 +81,8 @@
                   bws
                   oh-my-zsh
                   fish
-                  wakatime
                   (python3.withPackages (ps: with ps; [
                     psutil
-                    thefuck
                   ]))
                   uv
                   wakatime-cli

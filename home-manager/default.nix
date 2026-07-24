@@ -47,7 +47,7 @@
       kubectx
       k9s
       yarn
-      nodePackages.pnpm
+      pnpm
       # Security tools
       sops
       age
@@ -55,7 +55,6 @@
       
       # Shell and environment
       oh-my-zsh
-      wakatime
       jankyborders
       sketchybar
       jq
@@ -365,8 +364,11 @@
 
     jujutsu.enable = true;
 
+    # Disabled 2026-07-23: vscode 1.129.1 fails to build on darwin-arm64 at the
+    # current nixpkgs pin (patchPhase chmods a moved ripgrep path). Install VSCode
+    # via Homebrew cask meanwhile; flip back to true once nixpkgs catches up.
     vscode = {
-      enable = true;
+      enable = false;
       profiles = {
         default = {
           extensions = with pkgs.vscode-extensions; [
