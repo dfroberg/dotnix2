@@ -1,10 +1,12 @@
 {lib, pkgs, ...}:
 {
   # Language servers driven by lsp.lua (must be on PATH). nixd + markdown-oxide
-  # are already in the top-level home.packages. elixir-ls/solargraph are configured
-  # in lsp.lua but intentionally NOT installed (heavy Elixir/Ruby toolchains, unused).
+  # are already in the top-level home.packages. go/python toolchains come from
+  # Homebrew (gopls/pyright find them on PATH); the nix copies here cover fresh machines.
   home.packages = with pkgs; [
     lua-language-server        # lua_ls
+    pyright                    # pyright (Python)
+    gopls                      # gopls (Go)
     typescript-language-server # ts_ls
     nixfmt-rfc-style           # nixd formatting (provides the `nixfmt` binary)
   ];

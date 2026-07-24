@@ -39,15 +39,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
 
 local lspconfig = require('lspconfig')
 
-lspconfig.elixirls.setup { cmd = { "elixir-ls" } }
-lspconfig.solargraph.setup({
-  settings = {
-    solargraph = {
-      diagnostics = true,
-      useBundler = true
-    }
-  }
-})
+-- pruned elixirls (Elixir) + solargraph (Ruby): unused template leftovers.
 lspconfig.nixd.setup({
   cmd = { "nixd" },
   settings = {
@@ -82,5 +74,7 @@ lspconfig.lua_ls.setup {
     },
   },
 }
+lspconfig.pyright.setup{}         -- Python
+lspconfig.gopls.setup{}           -- Go
 lspconfig.markdown_oxide.setup{}
 lspconfig.ts_ls.setup{}
