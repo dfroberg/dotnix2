@@ -8,7 +8,7 @@
     pyright                    # pyright (Python)
     gopls                      # gopls (Go)
     typescript-language-server # ts_ls
-    nixfmt-rfc-style           # nixd formatting (provides the `nixfmt` binary)
+    nixfmt                     # nixd formatting (provides the `nixfmt` binary)
   ];
 
   home.file.".config/nvim/.vimrc".source = ../../.config/nvim/.config/nvim/.vimrc;

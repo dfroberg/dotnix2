@@ -37,10 +37,11 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end,
 })
 
-local lspconfig = require('lspconfig')
+-- nvim-lspconfig 0.11+ deprecated the require('lspconfig').X.setup{} framework.
+-- Use the built-in vim.lsp.config (merge settings onto the shipped lsp/<name>.lua)
+-- + vim.lsp.enable (activate). pruned elixirls/solargraph (unused template leftovers).
 
--- pruned elixirls (Elixir) + solargraph (Ruby): unused template leftovers.
-lspconfig.nixd.setup({
+vim.lsp.config('nixd', {
   cmd = { "nixd" },
   settings = {
     nixd = {
@@ -56,7 +57,8 @@ lspconfig.nixd.setup({
     },
   },
 })
-lspconfig.lua_ls.setup {
+
+vim.lsp.config('lua_ls', {
   settings = {
     Lua = {
       runtime = {
@@ -73,8 +75,7 @@ lspconfig.lua_ls.setup {
       },
     },
   },
-}
-lspconfig.pyright.setup{}         -- Python
-lspconfig.gopls.setup{}           -- Go
-lspconfig.markdown_oxide.setup{}
-lspconfig.ts_ls.setup{}
+})
+
+-- pyright (Python), gopls (Go), markdown_oxide, ts_ls (TypeScript) use shipped defaults.
+vim.lsp.enable({ 'nixd', 'lua_ls', 'pyright', 'gopls', 'markdown_oxide', 'ts_ls' })
