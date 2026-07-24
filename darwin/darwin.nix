@@ -308,12 +308,17 @@ auth       sufficient     pam_tid.so
 ' /etc/pam.d/sudo
         fi
 
-        # Ensure @admin is a nix trusted-user. Determinate Nix owns /etc/nix/nix.conf, so
-        # nix-darwin's nix.settings.trusted-users is inert -> append to nix.custom.conf
-        # (idempotent; self-heals if Determinate rewrites the file). Fixes devenv/direnv
-        # "you are not a trusted user". A fresh machine needs one nix-daemon restart/reboot.
+        # Determinate Nix owns /etc/nix/nix.conf, so nix-darwin's nix.settings are inert.
+        # Append our custom settings to nix.custom.conf (idempotent; self-heals if
+        # Determinate rewrites it). A fresh machine needs one nix-daemon restart/reboot.
+        #  - @admin trusted-user: fixes devenv/direnv "you are not a trusted user".
         if ! grep -q 'extra-trusted-users' /etc/nix/nix.custom.conf 2>/dev/null; then
           echo 'extra-trusted-users = @admin' >> /etc/nix/nix.custom.conf
+        fi
+        #  - FlakeHub Cache substituter (its keys are already trusted in nix.conf). Needs a
+        #    per-machine `determinate-nixd login`; without it nix just skips the cache (401).
+        if ! grep -q 'cache.flakehub.com' /etc/nix/nix.custom.conf 2>/dev/null; then
+          echo 'extra-substituters = https://cache.flakehub.com' >> /etc/nix/nix.custom.conf
         fi
 
         # Add Warp to admin group
