@@ -58,14 +58,9 @@ lspconfig.nixd.setup({
       formatting = {
         command = { "nixfmt" },
       },
-      options = {
-        nixos = {
-          expr = '(builtins.getFlake ("git+file://" + toString ./.)).nixosConfigurations.k-on.options',
-        },
-        home_manager = {
-          expr = '(builtins.getFlake ("git+file://" + toString ./.)).homeConfigurations."ruixi@k-on".options',
-        },
-      },
+      -- (removed the templated `options` block that pointed at a foreign flake's
+      --  nixosConfigurations.k-on / homeConfigurations."ruixi@k-on" — those don't
+      --  exist here and made nixd error. nixpkgs completion/diagnostics still work.)
     },
   },
 })
