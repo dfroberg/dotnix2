@@ -20,6 +20,8 @@
   programs.neovim = {
     enable = true;
     defaultEditor = true;
+    withRuby = false;    # no Ruby remote-plugin provider (config is all Lua)
+    withPython3 = false; # no Python3 remote-plugin provider
 
     initLua = lib.fileContents ../../.config/nvim/.config/nvim/init.lua;
 
