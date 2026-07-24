@@ -10,7 +10,7 @@
     enable = true;
     defaultEditor = true;
 
-    extraLuaConfig = lib.fileContents ../../.config/nvim/.config/nvim/init.lua;
+    initLua = lib.fileContents ../../.config/nvim/.config/nvim/init.lua;
 
     plugins = with pkgs.vimPlugins; [
       # =======================================================================
@@ -126,32 +126,25 @@
       # TREESITTER
       # =======================================================================
       {
-        plugin = nvim-treesitter.withAllGrammars; # Treesitter
+        plugin = nvim-treesitter.withAllGrammars; # Treesitter (main branch)
         type = "lua";
         config = ''
-        require'nvim-treesitter.configs'.setup {
-          highlight = { enable = true, },
-          indent = { enable = true },
-        }
+        -- nvim-treesitter "main" branch removed the `nvim-treesitter.configs` module
+        -- and its highlight/indent submodules. Parsers come from withAllGrammars;
+        -- enable TS highlighting + indent per buffer on FileType.
+        vim.api.nvim_create_autocmd('FileType', {
+          callback = function(args)
+            if pcall(vim.treesitter.start) then
+              vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+            end
+          end,
+        })
         '';
       }
-      {
-        plugin = nvim-treesitter-textobjects; # helix-style selection of TS
-        type = "lua";
-        config = ''
-        require'nvim-treesitter.configs'.setup {
-          incremental_selection = {
-            enable = true,
-            keymaps = {
-              init_selection = "<M-o>",
-              scope_incremental = "<M-O>",
-              node_incremental = "<M-o>",
-              node_decremental = "<M-i>",
-            },
-          },
-        }
-        '';
-      }
+      # nvim-treesitter "main" dropped the incremental_selection module (was bound to
+      # <M-o>/<M-i> here). No core equivalent exists on the main branch; a/i textobjects
+      # are still provided by mini.ai below. Plugin kept loaded for its queries.
+      nvim-treesitter-textobjects
       {
         plugin = pkgs.vimUtils.buildVimPlugin {
           name = "nvim-tree-pairs";
