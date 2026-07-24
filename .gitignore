@@ -7,6 +7,9 @@ local.nix
 # Devenv
 .devenv*
 devenv.local.nix
+# devenv.lock re-locks per machine (different devenv versions) and isn't the system
+# flake.lock — untracked to stop cross-machine churn blocking `git pull`.
+devenv.lock
 
 # direnv
 .direnv
