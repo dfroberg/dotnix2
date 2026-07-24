@@ -201,11 +201,9 @@
       "warp"
     ];
 
-    masApps = {
-      Tailscale = 1475387142;
-      Slack = 803453959;
-      Bitwarden = 1352778147;
-    };
+    # masApps removed 2026-07-24: Tailscale/Slack/Bitwarden are installed via casks/
+    # direct download (mas list shows them untracked), so `mas install` failed on
+    # every switch (`brew bundle` exit non-zero). Manage them outside homebrew.masApps.
   };
 
   system = {
