@@ -145,6 +145,10 @@
         target = ".config/yabai";
         recursive = true;
       };
+      # Karabiner rewrites this file at runtime, and the darwin postActivation script
+      # also touches it — so home-manager must overwrite WITHOUT a backup. Otherwise the
+      # .backup collides on the next switch ("would be clobbered") and aborts activation.
+      ".config/karabiner/karabiner.json".force = true;
       ".config/karabiner/karabiner.json".text = builtins.toJSON {
         global = {
           check_for_updates_on_startup = true;
