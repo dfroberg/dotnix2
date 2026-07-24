@@ -127,7 +127,7 @@ run_aerospace reload-config || log "Failed to reload configuration"
 sleep 3  # Give more time for configuration to apply
 
 # Get layout file
-LAYOUT_FILE="/Users/dfroberg/.hammerspoon/workspace_layouts.json"
+LAYOUT_FILE="$HOME/.hammerspoon/workspace_layouts.json"
 if [ -f "$LAYOUT_FILE" ]; then
   log "Using layout file: $LAYOUT_FILE"
   LAYOUT=$(cat "$LAYOUT_FILE")

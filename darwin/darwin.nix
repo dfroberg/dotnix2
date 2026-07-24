@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
   nixpkgs = {
@@ -309,7 +309,7 @@ auth       sufficient     pam_tid.so
         fi
 
         # Configure Karabiner-Elements
-        KARABINER_USERS="/Users/dfroberg /var/root"
+        KARABINER_USERS="/Users/${config.system.primaryUser} /var/root"
         
         # Add a log function
         log() {
