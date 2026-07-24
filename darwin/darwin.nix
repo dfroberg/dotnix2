@@ -201,9 +201,15 @@
       "warp"
     ];
 
-    # masApps removed 2026-07-24: Tailscale/Slack/Bitwarden are installed via casks/
-    # direct download (mas list shows them untracked), so `mas install` failed on
-    # every switch (`brew bundle` exit non-zero). Manage them outside homebrew.masApps.
+    # Tailscale/Slack/Bitwarden were in masApps (App Store) but aren't MAS-tracked,
+    # so `mas install` failed on every switch. Declare them as casks with per-cask
+    # `adopt` (nix-darwin's homebrew.casks.*.args submodule has no `adopt` option) via
+    # raw Brewfile lines, so brew takes over the existing non-brew installs.
+    extraConfig = ''
+      cask "tailscale-app", args: { adopt: true }
+      cask "slack", args: { adopt: true }
+      cask "bitwarden", args: { adopt: true }
+    '';
   };
 
   system = {
