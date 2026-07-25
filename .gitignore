@@ -1,5 +1,8 @@
 local.nix
 
+# nix build output symlink (darwin-rebuild build)
+result
+
 # Secrets — never commit the real age private key.
 # The real key lives ONLY at ~/.config/sops/age/keys.txt (outside this repo).
 .config/sops/age/keys.txt

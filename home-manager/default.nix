@@ -11,6 +11,7 @@
     ./aerospace.nix
     ./gpg.nix
     ./vpn.nix
+    ./claude-mcp.nix
   ];
 
   home = {
