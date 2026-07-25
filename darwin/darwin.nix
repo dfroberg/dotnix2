@@ -219,8 +219,14 @@
       cask "slack", args: { adopt: true }
       cask "bitwarden", args: { adopt: true }
       cask "shottr", args: { adopt: true }
-      cask "docker", args: { adopt: true }
     '';
+    # Docker Desktop is deliberately NOT adopted. Its adopt runs
+    # `sudo -E -- chmod -R a+rX /Applications/Docker.app`, which macOS App Management
+    # (TCC) refuses even for root -- Docker.app is owned by the user and carries no
+    # restricted flags, yet the chmod still fails "Operation not permitted". No sudoers
+    # rule can grant this. The failure took the whole `brew bundle` down, so every
+    # switch failed; unattended it first hung 54 min waiting on that sudo password.
+    # Docker Desktop stays installed and working, just not Homebrew-managed.
   };
 
   system = {
