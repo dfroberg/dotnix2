@@ -162,7 +162,7 @@
     enable = true;
 
     taps = [
-      # Removing the tap since we're installing manually
+      "aovestdipaperino/tap" # tokensave (jCodeMunch/TokenSave code-intel MCP)
     ];
 
     brews = [
@@ -187,6 +187,7 @@
       "helm" # Kubernetes package manager
       "markdownlint-cli" # provides `markdownlint` for the ~/.claude markdownlint hook
       "ruff" # fast Python linter used in workflows
+      "aovestdipaperino/tap/tokensave" # code-intel MCP server (mcp__tokensave__*)
     ];
 
     casks = [
