@@ -12,6 +12,7 @@
     ./gpg.nix
     ./vpn.nix
     ./claude-mcp.nix
+    ./claude-sync-hooks.nix
   ];
 
   home = {
