@@ -25,8 +25,12 @@ let
   nud-abort = pkgs.writeShellScriptBin "nud-abort" ''
     set -uo pipefail
     echo "[nud-abort] clearing a stuck activation…"
-    pkill -f 'darwin-rebuild switch' 2>/dev/null && echo "  killed darwin-rebuild" || echo "  no darwin-rebuild running"
-    pkill -f 'brew bundle --file='  2>/dev/null && echo "  killed brew bundle"    || echo "  no brew bundle running"
+    # SIGKILL, innermost first. Plain SIGTERM does not work here: bash defers it
+    # while waiting on a foreground child, and sudo forwards it instead of dying,
+    # so `pkill -f 'darwin-rebuild switch'` leaves the whole tree running. Killing
+    # the parent first would just orphan brew bundle and let it keep running.
+    pkill -9 -f 'brew bundle --file='  2>/dev/null && echo "  killed brew bundle"    || echo "  no brew bundle running"
+    pkill -9 -f 'darwin-rebuild switch' 2>/dev/null && echo "  killed darwin-rebuild" || echo "  no darwin-rebuild running"
     # Homebrew leaves lock files behind when killed; stale ones block the next run.
     if [ -d /opt/homebrew/var/homebrew/locks ]; then
       find /opt/homebrew/var/homebrew/locks -type f -delete 2>/dev/null || true
