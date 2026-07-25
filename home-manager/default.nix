@@ -89,6 +89,12 @@
 
           ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/wakatime.age} > ${config.home.homeDirectory}/.wakatime.cfg
 
+          # claude-sync git-crypt key — used by ~/.claude-sync/bin/claude-sync to
+          # auto-unlock the encrypted memory/settings sync repo on a fresh machine.
+          mkdir -p ${config.home.homeDirectory}/.config/git-crypt
+          ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/claude-sync-key.age} > ${config.home.homeDirectory}/.config/git-crypt/claude-sync.key
+          chmod 600 ${config.home.homeDirectory}/.config/git-crypt/claude-sync.key
+
           # Decrypt and setup GPG files
           echo "Setting up GPG configuration..."
           mkdir -p ${config.home.homeDirectory}/.gnupg
