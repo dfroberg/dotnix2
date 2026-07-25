@@ -28,8 +28,13 @@ let
     }
 
     # jCodeMunch (precision): uv tool + background watch LaunchAgent
+    # The [watch] extra is REQUIRED, not optional: it pulls in watchfiles, and without
+    # it every watch task dies at startup with "watchfiles is required for the watch
+    # subcommand", is restarted, re-runs a full initial index, and dies again -- forever.
+    # Observed on a plain `uv tool install jcodemunch-mcp`: 2.6 cores burned continuously
+    # and a 2.5 GB watch.err. --force so an existing extras-less install gets corrected.
     if command -v uv >/dev/null 2>&1; then
-      uv tool install jcodemunch-mcp >/dev/null 2>&1 && log "jcodemunch uv tool present" \
+      uv tool install --force 'jcodemunch-mcp[watch]' >/dev/null 2>&1 && log "jcodemunch uv tool present (with watch extra)" \
         || log "jcodemunch uv tool install skipped (offline?)"
     fi
     command -v jcodemunch-mcp >/dev/null 2>&1 \
