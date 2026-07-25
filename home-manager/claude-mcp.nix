@@ -13,17 +13,27 @@ let
     export PATH="$HOME/.local/bin:${pkgs.uv}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:$PATH"
     log(){ printf '[claude-mcp-setup] %s\n' "$*"; }
 
-    # True if a server is registered at USER scope (top-level mcpServers of ~/.claude.json).
-    # Direct config read — avoids `claude mcp list`, which health-checks/spawns every server.
-    mcp_has(){ python3 -c "import json,os,sys; d=json.load(open(os.path.expanduser('~/.claude.json'))); sys.exit(0 if '$1' in (d.get('mcpServers') or {}) else 1)" 2>/dev/null; }
+    # True if a server is already registered. Uses claude's own source of truth:
+    # `mcp get` exits 0 when present, non-zero when missing, and (unlike `mcp list`)
+    # does not health-check/spawn every configured server. Deliberately NOT a python3
+    # read of ~/.claude.json -- that depended on python3 being on the activation PATH,
+    # silently returned "missing" when it wasn't, and made every run re-attempt an
+    # `mcp add` that then failed with "already exists in user config".
+    mcp_has(){ claude mcp get "$1" >/dev/null 2>&1; }
+
+    log "context: user=$(id -un) HOME=$HOME claude=$(command -v claude || echo MISSING)"
 
     reg(){ # <name> <command> [args...]
       local n="$1"; shift
       if mcp_has "$n"; then log "$n already registered"; return 0; fi
-      if command -v claude >/dev/null 2>&1 && claude mcp add --scope user "$n" -- "$@" >/dev/null 2>&1; then
+      if ! command -v claude >/dev/null 2>&1; then log "$n: claude CLI not on PATH"; return 1; fi
+      # Keep the error: silently discarding it made an activation-context failure
+      # impossible to diagnose from the switch output.
+      local out
+      if out=$(claude mcp add --scope user "$n" -- "$@" 2>&1); then
         log "registered $n"
       else
-        log "$n registration failed"
+        log "$n registration failed: $out"
       fi
     }
 
@@ -64,6 +74,8 @@ in
     SENTINEL="${config.home.homeDirectory}/.claude/.code-intel-setup.v1"
     if [ ! -f "$SENTINEL" ]; then
       echo "Setting up code-intel MCP stack (jcodemunch/tokensave/gitnexus)…"
+      # Runs as the user (verified: the script logs user/HOME/claude on every run),
+      # so ~/.claude.json and ~/.local/bin/claude resolve correctly without sudo.
       if ${claude-mcp-setup}/bin/claude-mcp-setup; then
         mkdir -p "${config.home.homeDirectory}/.claude" && touch "$SENTINEL"
       else
