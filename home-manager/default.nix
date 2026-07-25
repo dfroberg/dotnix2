@@ -359,7 +359,10 @@
         da = "direnv allow";
         # newer nix-darwin requires activation as root; run darwin-rebuild (from the
         # flake's pinned nix-darwin) directly under sudo. Hostname resolves the config.
-        nud = "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ~/dotnix";
+        # -n: never prompt. The NOPASSWD rule (darwin/darwin.nix) covers this, so a
+        # prompt would only ever appear when it can't be answered anyway (mobile/no TTY).
+        nud = "sudo -n /run/current-system/sw/bin/darwin-rebuild switch --flake ~/dotnix";
+        nud-abort = "sudo -n /run/current-system/sw/bin/nud-abort";
         showapps = "yabai -m query --windows | jq -r '.[].app' | sort | uniq";
         showwindows = "yabai -m query --windows | jq -r '.[] | \"id: \\(.id) app: \\(.app) floating: \\(.\"is-floating\") title: \\(.title)\"'";
         showspaces = "yabai -m query --spaces | jq -r '.[].label'";

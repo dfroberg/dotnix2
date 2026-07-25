@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  imports = [ ./unattended.nix ];
+
   nixpkgs = {
     config = {
       allowUnfree = true;
@@ -360,6 +362,9 @@ auth       sufficient     pam_tid.so
         # Yabai and darwin-rebuild
         %admin ALL=(root) NOPASSWD: /run/current-system/sw/bin/yabai --load-sa
         %admin ALL=(root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+
+        # Recover a hung unattended switch remotely (see darwin/unattended.nix).
+        %admin ALL=(root) NOPASSWD: /run/current-system/sw/bin/nud-abort
 
         # System configuration commands
         %admin ALL=(root) NOPASSWD: /usr/bin/sed -i "" "/pam_tid.so/d" /etc/pam.d/sudo
