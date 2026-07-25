@@ -10,7 +10,11 @@
 let
   claude-mcp-setup = pkgs.writeShellScriptBin "claude-mcp-setup" ''
     set -uo pipefail   # NOT -e: best-effort, never abort a switch
-    export PATH="$HOME/.local/bin:${pkgs.uv}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:$PATH"
+    # The system dirs are NOT optional. home-manager activation runs with a restricted
+    # PATH that omits /bin and /usr/bin, so `launchctl` (and `python3`) are simply
+    # missing there -- which silently broke both watch-install (it shells out to
+    # launchctl internally) and the agent restart below.
+    export PATH="$HOME/.local/bin:${pkgs.uv}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
     log(){ printf '[claude-mcp-setup] %s\n' "$*"; }
 
     # True if a server is already registered. Uses claude's own source of truth:
@@ -47,11 +51,26 @@ let
       uv tool install --force 'jcodemunch-mcp[watch]' >/dev/null 2>&1 && log "jcodemunch uv tool present (with watch extra)" \
         || log "jcodemunch uv tool install skipped (offline?)"
     fi
-    command -v jcodemunch-mcp >/dev/null 2>&1 \
-      && { jcodemunch-mcp watch-install >/dev/null 2>&1 && log "jcodemunch watch agent ensured" || true; }
+    if command -v jcodemunch-mcp >/dev/null 2>&1; then
+      if out=$(jcodemunch-mcp watch-install 2>&1); then log "jcodemunch watch agent ensured"
+      else log "watch-install failed: $out"; fi
+    else
+      log "jcodemunch-mcp not on PATH — watch agent not installed"
+    fi
 
-    # TokenSave (semantic) comes from brew: needs `brew trust aovestdipaperino/tap` (Homebrew 6.x).
-    command -v tokensave >/dev/null 2>&1 || log "tokensave missing — 'brew trust aovestdipaperino/tap' then nud"
+    # MUST restart the agent after the install above: `uv tool install --force` recreates
+    # the tool venv, swapping site-packages out from under an already-running watch-all.
+    # Its imports then fail with "watchfiles is required ... not restarting (fatal)" and the
+    # watcher is silently dead -- installed, low CPU, watching nothing. kickstart -k is
+    # idempotent and harmless if the agent isn't loaded.
+    if out=$(launchctl kickstart -k "gui/$(id -u)/us.gravelle.jcodemunch-watch" 2>&1); then
+      log "jcodemunch watch agent restarted"
+    else
+      log "watch agent restart failed (launchd gui domain may be unreachable from activation): $out"
+    fi
+
+    # TokenSave (semantic) comes from brew; nix-darwin marks the tap trusted in the Brewfile.
+    command -v tokensave >/dev/null 2>&1 || log "tokensave missing — check the brew step of this switch"
 
     # Register the three MCP servers at user scope (idempotent).
     reg jcodemunch uvx jcodemunch-mcp
@@ -71,7 +90,7 @@ in
   # Run once per machine (sentinel-guarded). Retries next switch if it failed (e.g.
   # offline / tap not trusted). Bump the .vN suffix to force a re-run after edits.
   home.activation.setupCodeIntelMcp = lib.hm.dag.entryAfter [ "installPackages" ] ''
-    SENTINEL="${config.home.homeDirectory}/.claude/.code-intel-setup.v1"
+    SENTINEL="${config.home.homeDirectory}/.claude/.code-intel-setup.v4"
     if [ ! -f "$SENTINEL" ]; then
       echo "Setting up code-intel MCP stack (jcodemunch/tokensave/gitnexus)…"
       # Runs as the user (verified: the script logs user/HOME/claude on every run),
