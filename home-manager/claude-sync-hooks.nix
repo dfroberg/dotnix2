@@ -1,30 +1,52 @@
 { config, lib, pkgs, ... }:
 
-# Keeps the claude-sync hooks wired into ~/.claude/settings.json.
+# Durability for the ~/.claude memory sync. Two jobs:
 #
-# Why this exists: settings.json is a CONTESTED file. `tokensave install`,
-# `jcodemunch init` and similar installers rewrite it to manage their own hooks, and
-# one of them silently dropped the claude-sync SessionStart/SessionEnd entries that
-# were appended by hand. The loss is invisible -- nothing errors, memories just stop
-# syncing. It went unnoticed for a day, and the stripped copy was even pushed to the
-# sync repo, so today's memories never reached the other machine.
+#  1. Keep the claude-sync hooks wired into ~/.claude/settings.json. That file is
+#     CONTESTED -- `tokensave install`, `jcodemunch init` and similar installers rewrite
+#     it to manage their own hooks, and one of them silently dropped the claude-sync
+#     entries. Nothing errored; memories just stopped syncing. It went unnoticed for a
+#     day, and the stripped file was then pushed to the sync repo, so a pull on the other
+#     machine would have propagated the breakage instead of repairing it.
 #
-# So this re-asserts the two entries on EVERY switch (no sentinel -- the whole point
-# is to self-heal after another tool clobbers them). It is idempotent and additive:
-# it only touches hooks.SessionStart / hooks.SessionEnd, matches existing entries by
-# the "claude-sync" substring, and leaves every other hook and setting untouched.
-# dotnix does not own settings.json (claude-sync does) -- it just guarantees these two.
+#  2. Push on memory CHANGE rather than session lifecycle. SessionEnd has no documented
+#     guarantee under SIGKILL/crash/terminal-close, and a long session leaves everything
+#     unsynced until it ends (observed: an 8h session whose 17:00 memories were still
+#     unpushed an hour later). A PostToolUse hook flags a change instantly, and a timer
+#     does the actual push -- so worst-case exposure is one interval, even if Claude dies.
+#     Claude Code has no periodic hooks ("hooks fire at lifecycle points, not on timers"),
+#     hence a launchd agent.
 let
+  syncBin = "${config.home.homeDirectory}/.claude-sync/bin/claude-sync";
+  dirtyFlag = "${config.home.homeDirectory}/.claude-sync/.dirty";
+  syncLog = "${config.home.homeDirectory}/.claude-sync/last-sync.log";
+
+  # Timer body. Ordering matters: clear the flag BEFORE pushing, so a memory written
+  # mid-push re-flags and is caught next tick instead of being swallowed; restore it on
+  # failure so a transient network error retries rather than silently dropping the work.
+  pushIfDirty = pkgs.writeShellScriptBin "claude-sync-push-if-dirty" ''
+    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/run/current-system/sw/bin:${config.home.homeDirectory}/.nix-profile/bin:$PATH"
+    [ -f "${dirtyFlag}" ] || exit 0
+    rm -f "${dirtyFlag}"
+    if ! GIT_TERMINAL_PROMPT=0 "${syncBin}" push >>"${syncLog}" 2>&1; then
+      : > "${dirtyFlag}"   # failed (offline?) — leave it flagged for the next tick
+      exit 0               # never fail the agent; launchd would just respawn it
+    fi
+  '';
+
   ensureScript = pkgs.writeText "claude-sync-hooks-ensure.py" ''
     import json, os, sys
 
     SETTINGS = os.path.expanduser("~/.claude/settings.json")
-    # Log rather than discard: a hook that fails silently is how the previous
-    # breakage stayed invisible. Not to stdout/stderr -- that would be UI noise.
-    LOG = "$HOME/.claude-sync/last-sync.log"
+    HOOKS = "$HOME/.claude/hooks"
+    LOG = "$HOME/.claude-sync/last-sync.log"   # log, don't discard: silent failure is
+                                               # how the previous breakage stayed hidden
+    # event -> (matcher, command)
     WANT = {
-        "SessionStart": f'GIT_TERMINAL_PROMPT=0 "$HOME/.claude-sync/bin/claude-sync" pull >>{LOG} 2>&1 || true',
-        "SessionEnd":   f'GIT_TERMINAL_PROMPT=0 "$HOME/.claude-sync/bin/claude-sync" push >>{LOG} 2>&1 || true',
+        "SessionStart": ("", f'GIT_TERMINAL_PROMPT=0 "$HOME/.claude-sync/bin/claude-sync" pull >>{LOG} 2>&1 || true'),
+        "SessionEnd":   ("", f'GIT_TERMINAL_PROMPT=0 "$HOME/.claude-sync/bin/claude-sync" push >>{LOG} 2>&1 || true'),
+        # Flags a memory change instantly; the launchd timer performs the push.
+        "PostToolUse":  ("Write|Edit", f'{HOOKS}/claude-sync-mark-dirty.sh'),
     }
 
     if not os.path.exists(SETTINGS):
@@ -37,16 +59,15 @@ let
 
     hooks = cfg.setdefault("hooks", {})
     changed = []
-    for event, command in WANT.items():
+    for event, (matcher, command) in WANT.items():
         entries = hooks.setdefault(event, [])
-        # Already wired (in any matcher group)? then leave it exactly as-is.
+        # Present already (in any matcher group)? leave it exactly as the user has it.
         if any("claude-sync" in h.get("command", "")
                for grp in entries for h in grp.get("hooks", [])):
             continue
-        entries.append({
-            "matcher": "",
-            "hooks": [{"type": "command", "command": command, "timeout": 45}],
-        })
+        entry = {"matcher": matcher,
+                 "hooks": [{"type": "command", "command": command, "timeout": 45}]}
+        entries.append(entry)
         changed.append(event)
 
     if not changed:
@@ -61,9 +82,24 @@ let
   '';
 in
 {
-  # Every switch, not sentinel-guarded: this must repair the config after any other
-  # installer rewrites it. /usr/bin/python3 by absolute path -- the activation PATH
-  # omits /usr/bin, which is exactly what silently broke an earlier activation step.
+  home.packages = [ pushIfDirty ];
+
+  # The crash-proof half: fires on a timer regardless of what Claude is doing, so
+  # memories survive a killed session. Cheap -- it exits immediately unless flagged.
+  launchd.agents.claude-sync-push = {
+    enable = true;
+    config = {
+      ProgramArguments = [ "${pushIfDirty}/bin/claude-sync-push-if-dirty" ];
+      StartInterval = 300;        # 5 min: bounds worst-case loss without churn
+      RunAtLoad = false;          # login already triggers a SessionStart pull
+      StandardOutPath = syncLog;
+      StandardErrorPath = syncLog;
+    };
+  };
+
+  # Every switch, deliberately NOT sentinel-guarded: the point is to self-heal after
+  # another installer clobbers settings.json. /usr/bin/python3 by absolute path -- the
+  # activation PATH omits /usr/bin, which silently broke an earlier activation step.
   home.activation.ensureClaudeSyncHooks = lib.hm.dag.entryAfter [ "installPackages" ] ''
     if [ -x /usr/bin/python3 ]; then
       /usr/bin/python3 ${ensureScript} || echo "claude-sync hook check failed (non-fatal)"
