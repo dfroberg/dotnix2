@@ -50,6 +50,7 @@
       k9s
       yarn
       pnpm
+      nodejs # node/npm/npx runtime for MCP servers (was nvm-only; make it declarative)
       # Security tools
       sops
       age

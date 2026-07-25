@@ -183,6 +183,10 @@
       "hyperfine" # Benchmarking tool
       "openfortivpn" # SSL-VPN client used by vpn-connect/vpn-disconnect (deps: openssl@3, ca-certificates)
       "git-crypt" # transparent repo encryption for the ~/.claude-sync repo
+      "glab" # GitLab CLI (MR/CI workflows)
+      "helm" # Kubernetes package manager
+      "markdownlint-cli" # provides `markdownlint` for the ~/.claude markdownlint hook
+      "ruff" # fast Python linter used in workflows
     ];
 
     casks = [
@@ -212,6 +216,7 @@
       cask "slack", args: { adopt: true }
       cask "bitwarden", args: { adopt: true }
       cask "shottr", args: { adopt: true }
+      cask "docker", args: { adopt: true }
     '';
   };
 
