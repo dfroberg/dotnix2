@@ -182,6 +182,7 @@
       "difftastic" # Better diff
       "hyperfine" # Benchmarking tool
       "openfortivpn" # SSL-VPN client used by vpn-connect/vpn-disconnect (deps: openssl@3, ca-certificates)
+      "git-crypt" # transparent repo encryption for the ~/.claude-sync repo
     ];
 
     casks = [
