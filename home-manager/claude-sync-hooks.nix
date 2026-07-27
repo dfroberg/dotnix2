@@ -22,6 +22,7 @@ let
   syncLog = "${config.home.homeDirectory}/.claude-sync/last-sync.log";
 
   syncRepo = "${config.home.homeDirectory}/.claude-sync";
+  syncRemote = "git@github.com:dfroberg/claude-sync.git";
 
   # Timer body. Ordering matters: clear the flag BEFORE pushing, so a memory written
   # mid-push re-flags and is caught next tick instead of being swallowed; restore it on
@@ -162,6 +163,50 @@ in
   # Every switch, deliberately NOT sentinel-guarded: the point is to self-heal after
   # another installer clobbers settings.json. /usr/bin/python3 by absolute path -- the
   # activation PATH omits /usr/bin, which silently broke an earlier activation step.
+  # Clone the sync repo if it is missing. dotnix previously decrypted the git-crypt key and
+  # wired the hooks but assumed the repo already existed, so a new machine got hooks that
+  # fired and died on "No such file or directory" -- silently, because they end in `|| true`.
+  # Observed 2026-07-27 on Dannys-MacBook-Pro: five such failures, a night's memories living
+  # nowhere but that laptop, and nothing to indicate anything was wrong.
+  #
+  # Runs after decryptSecrets: the pull below needs ~/.config/git-crypt/claude-sync.key to
+  # auto-unlock, and that is what writes it.
+  home.activation.bootstrapClaudeSync = lib.hm.dag.entryAfter [ "decryptSecrets" ] ''
+    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/run/current-system/sw/bin:$PATH"
+
+    # Bootstrapped means "has a commit", not "has a .git". An offline switch can leave an
+    # initialised-but-empty repo, and keying off .git alone would never retry it.
+    if ! git -C "${syncRepo}" rev-parse --verify HEAD >/dev/null 2>&1; then
+      echo "claude-sync: no repo at ${syncRepo} — bootstrapping from ${syncRemote}"
+
+      # init + fetch + reset rather than `git clone`: clone refuses a non-empty directory,
+      # and a half-bootstrapped machine already has a stray last-sync.log sitting there
+      # from the hooks that fired and died. Not shallow -- full history is what made the
+      # revert possible when a bad push emptied the remote.
+      mkdir -p "${syncRepo}"
+      git -C "${syncRepo}" init -q -b main 2>/dev/null || true
+      git -C "${syncRepo}" remote add origin "${syncRemote}" 2>/dev/null \
+        || git -C "${syncRepo}" remote set-url origin "${syncRemote}"
+
+      if GIT_TERMINAL_PROMPT=0 git -C "${syncRepo}" fetch -q origin main 2>/dev/null; then
+        git -C "${syncRepo}" reset --hard -q origin/main
+        git -C "${syncRepo}" branch -q --set-upstream-to=origin/main main 2>/dev/null || true
+
+        # Pull IMMEDIATELY, on the bootstrap path only. This is the whole reason the clone
+        # lives here rather than in a runbook: a cloned-but-unapplied repo is the exact
+        # state in which a push deletes everything the other machine owns, and both the
+        # SessionEnd hook and the 5-minute timer can fire into that window. Getting the
+        # remote applied into ~/.claude first closes it. (bin/claude-sync also refuses such
+        # a push now, but ordering is the fix; the tripwire is the backstop.)
+        GIT_TERMINAL_PROMPT=0 "${syncRepo}/bin/claude-sync" pull >>"${syncLog}" 2>&1 \
+          && echo "claude-sync: bootstrapped and applied" \
+          || echo "claude-sync: cloned but pull failed (see ${syncLog})"
+      else
+        echo "claude-sync: fetch failed (offline?) — will retry next switch"
+      fi
+    fi
+  '';
+
   home.activation.ensureClaudeSyncHooks = lib.hm.dag.entryAfter [ "installPackages" ] ''
     # Re-assert the mark-dirty script itself. Copied, not symlinked -- see markDirty above.
     $DRY_RUN_CMD mkdir -p "${config.home.homeDirectory}/.claude/hooks"
