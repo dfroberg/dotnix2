@@ -382,6 +382,21 @@ auth       sufficient     pam_tid.so
         # Homebrew and Application setup
         %admin ALL=(root) NOPASSWD: /opt/homebrew/bin/brew
 
+        # openfortivpn VPN helpers (home-manager/vpn.nix). Args are pinned exactly so
+        # these grant the two dial-ups and the DNS/teardown steps, nothing wider --
+        # e.g. `pkill -f pppd` is allowed but `pkill -f .` is not.
+        #
+        # NOTE: /opt/homebrew/bin is admin-writable, so passwordless root on a binary
+        # under it is only as strong as write access to that path. The `brew` line above
+        # already concedes strictly more, so this adds no new exposure.
+        %admin ALL=(root) NOPASSWD: /opt/homebrew/bin/openfortivpn v1-mtb.tain.com\:8443 --saml-login --trusted-cert b542a3b331b9723031cc69768e3c2bad1bfa73c1f42770d1480a03c4a4a8056e --pppd-accept-remote=0
+        %admin ALL=(root) NOPASSWD: /opt/homebrew/bin/openfortivpn fg01.eeze.com\:10443 --saml-login --trusted-cert 2ddce84a1b014415f6ac5b3c0db1ac437b93785aca8520dbd64aa742e5c402db --pppd-accept-remote=0
+        %admin ALL=(root) NOPASSWD: /usr/sbin/networksetup -setdnsservers Wi-Fi *
+        %admin ALL=(root) NOPASSWD: /usr/bin/dscacheutil -flushcache
+        %admin ALL=(root) NOPASSWD: /usr/bin/killall -HUP mDNSResponder
+        %admin ALL=(root) NOPASSWD: /usr/bin/pkill -f openfortivpn
+        %admin ALL=(root) NOPASSWD: /usr/bin/pkill -f pppd
+
       '';
     };
   };
