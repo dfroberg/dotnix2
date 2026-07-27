@@ -213,6 +213,19 @@ in
     $DRY_RUN_CMD install -m 0755 ${markDirty} \
       "${config.home.homeDirectory}/.claude/hooks/claude-sync-mark-dirty.sh"
 
+    # Belt and braces on the exec bit. claude-sync classifies *.sh as text, so hooks are
+    # written with `sed > file`, which creates a NEW file at umask default 644 -- that broke
+    # every hook on Dannys-MacBook-Pro the first time it applied them ("Permission denied",
+    # and silently, because hooks end in `|| true`). canon/decanon now carry the mode and
+    # the repo records 100755, so a pull repairs it; this covers the cases where that is not
+    # enough: a machine that has not pulled since the fix, or a repo with core.fileMode
+    # false, where git ignores the mode change entirely. A hook that cannot execute is worse
+    # than one that is missing -- it fails on every prompt and blocks nothing.
+    if [ -d "${config.home.homeDirectory}/.claude/hooks" ]; then
+      $DRY_RUN_CMD find "${config.home.homeDirectory}/.claude/hooks" -maxdepth 1 -name '*.sh' \
+        -type f ! -perm -u+x -exec chmod u+x,g+x,o+x {} + 2>/dev/null || true
+    fi
+
     if [ -x /usr/bin/python3 ]; then
       /usr/bin/python3 ${ensureScript} || echo "claude-sync hook check failed (non-fatal)"
     fi
