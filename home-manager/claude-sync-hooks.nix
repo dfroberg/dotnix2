@@ -21,17 +21,79 @@ let
   dirtyFlag = "${config.home.homeDirectory}/.claude-sync/.dirty";
   syncLog = "${config.home.homeDirectory}/.claude-sync/last-sync.log";
 
+  syncRepo = "${config.home.homeDirectory}/.claude-sync";
+
   # Timer body. Ordering matters: clear the flag BEFORE pushing, so a memory written
   # mid-push re-flags and is caught next tick instead of being swallowed; restore it on
   # failure so a transient network error retries rather than silently dropping the work.
+  #
+  # The flag is necessary but NOT sufficient as a trigger. It is only ever set by a
+  # PostToolUse hook, so once it cleared there was nothing left to drive a retry, and a
+  # commit stranded by a failed push sat there indefinitely (observed 2026-07-27: three
+  # commits, the oldest 36h old, none on the remote). Being ahead of upstream is itself a
+  # reason to run, independent of whether anything new was written.
   pushIfDirty = pkgs.writeShellScriptBin "claude-sync-push-if-dirty" ''
     export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/run/current-system/sw/bin:${config.home.homeDirectory}/.nix-profile/bin:$PATH"
-    [ -f "${dirtyFlag}" ] || exit 0
+
+    # Unpushed commits? Then run even with no flag. `|| echo 0` covers a missing repo or
+    # an unset upstream, where rev-list fails and "ahead" is meaningless rather than zero.
+    ahead=$(git -C "${syncRepo}" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)
+
+    if [ ! -f "${dirtyFlag}" ] && [ "$ahead" -eq 0 ]; then
+      exit 0
+    fi
+
     rm -f "${dirtyFlag}"
     if ! GIT_TERMINAL_PROMPT=0 "${syncBin}" push >>"${syncLog}" 2>&1; then
       : > "${dirtyFlag}"   # failed (offline?) — leave it flagged for the next tick
       exit 0               # never fail the agent; launchd would just respawn it
     fi
+  '';
+
+  # Flags the sync repo dirty. Installed by activation rather than home.file: ~/.claude/
+  # hooks is itself in the claude-sync allowlist (DIRS=(skills agents commands hooks)), so
+  # a read-only store symlink here would break `claude-sync pull`, which writes the file
+  # in place. A real file that every switch re-asserts is the same self-healing tactic
+  # used for settings.json below.
+  #
+  # The match set mirrors the allowlist in bin/claude-sync exactly -- FILES, DIRS, and
+  # per-project memories. It previously covered ONLY memories, so editing settings.json,
+  # a skill or an agent never flagged anything and rode solely on SessionEnd, which is the
+  # guarantee this whole module exists to stop depending on.
+  markDirty = pkgs.writeText "claude-sync-mark-dirty.sh" ''
+    #!/usr/bin/env bash
+    # PostToolUse(Write|Edit) hook — flags the sync repo dirty when a synced file changes.
+    #
+    # Deliberately trivial: no git, no network. It only touches a flag file, so a write
+    # never pays sync latency. The periodic LaunchAgent does the actual push, which is
+    # what makes this crash-proof: SessionEnd has no guarantee on SIGKILL/crash/terminal
+    # close, and a long session would otherwise leave hours of work unsynced (observed
+    # 2026-07-25: an 8h session with memories written at 17:00 still unpushed at 18:00).
+    set -u
+
+    INPUT=$(cat)
+
+    # Substring match on the raw payload rather than parsing JSON: this runs on EVERY
+    # Write/Edit, and spawning python3 cost ~40ms a call versus ~5ms here. The trade is
+    # deliberate -- a false positive (a project-level .claude/settings.json, or the path
+    # merely appearing in file content) costs one redundant push, while a false negative
+    # silently loses work. Keep in sync with FILES/DIRS in bin/claude-sync.
+    case "$INPUT" in
+      *"/.claude/projects/"*"/memory/"*) ;;
+      *"/.claude/CLAUDE.md"*)            ;;
+      *"/.claude/settings.json"*)        ;;
+      *"/.claude/mcp_settings.json"*)    ;;
+      *"/.claude/keybindings.json"*)     ;;
+      *"/.claude/skills/"*)              ;;
+      *"/.claude/agents/"*)              ;;
+      *"/.claude/commands/"*)            ;;
+      *"/.claude/hooks/"*)               ;;
+      *) exit 0 ;;
+    esac
+
+    mkdir -p "$HOME/.claude-sync" 2>/dev/null
+    : > "$HOME/.claude-sync/.dirty"
+    exit 0
   '';
 
   ensureScript = pkgs.writeText "claude-sync-hooks-ensure.py" ''
@@ -101,6 +163,11 @@ in
   # another installer clobbers settings.json. /usr/bin/python3 by absolute path -- the
   # activation PATH omits /usr/bin, which silently broke an earlier activation step.
   home.activation.ensureClaudeSyncHooks = lib.hm.dag.entryAfter [ "installPackages" ] ''
+    # Re-assert the mark-dirty script itself. Copied, not symlinked -- see markDirty above.
+    $DRY_RUN_CMD mkdir -p "${config.home.homeDirectory}/.claude/hooks"
+    $DRY_RUN_CMD install -m 0755 ${markDirty} \
+      "${config.home.homeDirectory}/.claude/hooks/claude-sync-mark-dirty.sh"
+
     if [ -x /usr/bin/python3 ]; then
       /usr/bin/python3 ${ensureScript} || echo "claude-sync hook check failed (non-fatal)"
     fi
