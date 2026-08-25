@@ -378,7 +378,6 @@
       
       shellAliases = {
         asl = "aws sso login";
-        claude = "NODE_OPTIONS=\"--max-old-space-size=12288\" claude"; # ported from pre-HM .zshrc
         ls = "eza -l";
         ll = "eza -la";
         da = "direnv allow";
