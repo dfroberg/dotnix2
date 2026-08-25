@@ -264,6 +264,30 @@
     };
   };
 
+  # Karabiner is installed as a homebrew cask (darwin/darwin.nix) and its config is
+  # written above, but nothing in nix ever *started* it: autostart lives in Karabiner's
+  # own SMAppService registration (System Settings -> Login Items & Extensions), which
+  # nix does not manage — there are zero org.pqrs plists under /Library/Launch*. When
+  # that login item silently no-ops, Karabiner-Core-Service exits 0 without bringing up
+  # the user server, the caps_lock -> hyper remap is dead, and nothing logs an error
+  # (the VirtualHIDDevice system daemon stays up, so it looks healthy).
+  #
+  # Own the startup here instead. Target karabiner_console_user_server directly, NOT
+  # Karabiner-Core-Service: Core-Service exits once it has spawned its children, so
+  # KeepAlive on it would respawn-loop.
+  launchd.agents.karabiner = {
+    enable = true;
+    config = {
+      ProgramArguments = [
+        "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_console_user_server"
+      ];
+      KeepAlive = true;
+      RunAtLoad = true;
+      StandardOutPath = "/tmp/karabiner.log";
+      StandardErrorPath = "/tmp/karabiner.error.log";
+    };
+  };
+
   programs = {
     dircolors.enable = true;
     fzf.enable = true;
