@@ -172,7 +172,11 @@ in
   # Runs after decryptSecrets: the pull below needs ~/.config/git-crypt/claude-sync.key to
   # auto-unlock, and that is what writes it.
   home.activation.bootstrapClaudeSync = lib.hm.dag.entryAfter [ "decryptSecrets" ] ''
-    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/run/current-system/sw/bin:$PATH"
+    # APPEND, never prepend: this snippet is inlined into home-manager's own activation
+    # script, so a leading /usr/bin shadows the coreutils HM put first and breaks its later
+    # steps -- linkGeneration's `readlink -e` died on BSD readlink (2026-08-25). The system
+    # dirs are still needed: HM's activation PATH omits /bin and /usr/bin.
+    export PATH="$PATH:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/run/current-system/sw/bin"
 
     # Bootstrapped means "has a commit", not "has a .git". An offline switch can leave an
     # initialised-but-empty repo, and keying off .git alone would never retry it.
