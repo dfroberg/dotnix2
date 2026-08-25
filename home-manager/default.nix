@@ -13,6 +13,7 @@
     ./vpn.nix
     ./claude-mcp.nix
     ./claude-sync-hooks.nix
+    ./claude-launcher.nix
   ];
 
   home = {
@@ -153,6 +154,14 @@
         source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/yabai";
         target = ".config/yabai";
         recursive = true;
+      };
+      # Warp launch config for the Eeze SRE workspace: 13 tabs, 10 of them auto-resuming a
+      # named Claude session via `ccr` (claude-launcher.nix). Out-of-store like hammerspoon
+      # and yabai above: Warp's UI edits launch configs in place, which a read-only store
+      # symlink would break. Warp itself is a homebrew cask (darwin/darwin.nix).
+      warpEezeSre = lib.mkIf pkgs.stdenvNoCC.isDarwin {
+        source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/warp/launch_configurations/Eeze-sre.yaml";
+        target = ".warp/launch_configurations/Eeze-sre.yaml";
       };
       # Karabiner rewrites this file at runtime, and the darwin postActivation script
       # also touches it — so home-manager must overwrite WITHOUT a backup. Otherwise the

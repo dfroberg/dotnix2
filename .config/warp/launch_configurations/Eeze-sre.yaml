@@ -1,0 +1,108 @@
+# Warp launch configuration: the Eeze SRE workspace -- 13 tabs, 10 of them auto-resuming a
+# named Claude Code session via `ccr <name>` (home-manager/claude-launcher.nix).
+#
+# Managed by nix as an OUT-OF-STORE symlink (home-manager/default.nix, home.file):
+#   ~/.warp/launch_configurations/Eeze-sre.yaml -> ~/dotnix/.config/warp/launch_configurations/Eeze-sre.yaml
+# so Warp's own "edit launch config" UI keeps working -- edits land in this repo file.
+#
+# The `sleep`s stagger the Claude cold-starts 2s apart so ten sessions do not all spawn
+# at once. `cwd` must be absolute -- Warp does not expand `~`.
+---
+name: Eeze-sre
+active_window_index: 0
+windows:
+  - active_tab_index: 0
+    tabs:
+      - title: warroom-feedback-loop
+        color: blue
+        layout:
+          cwd: /Users/dannyfroberg/eeze/slack-warroom-sync
+          pane_mode: terminal
+          commands:
+            - exec: "ccr warroom-feedback-loop"
+      - title: warroom-2
+        color: blue
+        layout:
+          cwd: /Users/dannyfroberg/eeze/slack-warroom-sync
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 2; ccr warroom-2"
+      - title: warroom-3
+        color: blue
+        layout:
+          cwd: /Users/dannyfroberg/eeze/slack-warroom-sync
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 4; ccr warroom-3"
+      - title: groundcover
+        color: cyan
+        layout:
+          cwd: /Users/dannyfroberg/eeze/groundcover
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 6; ccr groundcover"
+      - title: Alert Correlator
+        color: cyan
+        layout:
+          cwd: /Users/dannyfroberg/eeze/groundcover-alert-correlator
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 8; ccr correlator"
+      - title: Correlator TUI
+        color: cyan
+        layout:
+          cwd: /Users/dannyfroberg/eeze/groundcover-alert-correlator
+          pane_mode: terminal
+          commands:
+            - exec: "source .envrc && uv run python scripts/funnel-monitor.py"
+      - title: xml-config
+        color: yellow
+        layout:
+          cwd: /Users/dannyfroberg/eeze/xml-configs
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 10; ccr xml-configs"
+      - title: docs
+        color: yellow
+        layout:
+          cwd: /Users/dannyfroberg/eeze/docs
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 12; ccr docs"
+      - title: tx-watcher
+        color: magenta
+        layout:
+          cwd: /Users/dannyfroberg/eeze/transaction-watcher
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 14; ccr tx-watcher"
+      - title: sre-plugin
+        color: magenta
+        layout:
+          cwd: /Users/dannyfroberg/eeze/claude-sre-plugin
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 16; ccr sre-plugin"
+      - title: retro
+        color: green
+        layout:
+          cwd: /Users/dannyfroberg/eeze/retro
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 18; ccr retro"
+      - title: Eeze General
+        color: green
+        layout:
+          cwd: /Users/dannyfroberg/eeze
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 20; ccr general"
+      - title: Hermes
+        color: green
+        layout:
+          cwd: /Users/dannyfroberg/eeze
+          pane_mode: terminal
+      - title: term
+        layout:
+          cwd: /Users/dannyfroberg/eeze
+          pane_mode: terminal
