@@ -145,8 +145,12 @@
         target = ".hammerspoon";
         recursive = true;
         onChange = ''
-          if command -v hs >/dev/null 2>&1; then
-            /usr/bin/env hs -c "hs.reload()"
+          # A switch must never block on Hammerspoon: `hs` waits forever when the app is
+          # not running, and even when it is, the activation runs under root's `sudo -u`
+          # bootstrap namespace and cannot reach the GUI session's IPC port (hung a switch
+          # for 20+ min on 2026-08-25). Skip unless the app is up, and bound the wait.
+          if command -v hs >/dev/null 2>&1 && /usr/bin/pgrep -xq Hammerspoon; then
+            timeout 10 /usr/bin/env hs -c "hs.reload()" || true
           fi
         '';
       };
