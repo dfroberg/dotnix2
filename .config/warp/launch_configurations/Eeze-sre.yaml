@@ -1,12 +1,15 @@
-# Warp launch configuration: the Eeze SRE workspace -- 13 tabs, 10 of them auto-resuming a
+# Warp launch configuration: the Eeze SRE workspace -- 16 tabs, 12 of them auto-resuming a
 # named Claude Code session via `ccr <name>` (home-manager/claude-launcher.nix).
 #
 # Managed by nix as an OUT-OF-STORE symlink (home-manager/default.nix, home.file):
 #   ~/.warp/launch_configurations/Eeze-sre.yaml -> ~/dotnix/.config/warp/launch_configurations/Eeze-sre.yaml
 # so Warp's own "edit launch config" UI keeps working -- edits land in this repo file.
 #
-# The `sleep`s stagger the Claude cold-starts 2s apart so ten sessions do not all spawn
+# The `sleep`s stagger the Claude cold-starts 2s apart so twelve sessions do not all spawn
 # at once. `cwd` must be absolute -- Warp does not expand `~`.
+#
+# `pane_mode: agent` opens the tab in Warp Agent Mode (Warp's own agent, model = whatever the
+# agent dropdown last had, e.g. grok-4.6 via SuperGrok). No per-tab model/harness field exists.
 ---
 name: Eeze-sre
 active_window_index: 0
@@ -97,6 +100,18 @@ windows:
           pane_mode: terminal
           commands:
             - exec: "sleep 20; ccr general"
+      - title: dotnix
+        color: yellow
+        layout:
+          cwd: /Users/dannyfroberg/dotnix
+          pane_mode: terminal
+          commands:
+            - exec: "sleep 22; ccr dotnix"
+      - title: dotnix-grok
+        color: yellow
+        layout:
+          cwd: /Users/dannyfroberg/dotnix
+          pane_mode: agent
       - title: Hermes
         color: green
         layout:
