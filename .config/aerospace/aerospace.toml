@@ -194,21 +194,23 @@ cmd-alt-ctrl-shift-right = ['join-with right', 'mode main']
 
 [workspace-to-monitor-force-assignment]
 # First matching name wins.
-# Home (lid open): Left / Center / Right virtuals + Built-in + LC49G95T.
-#   1=Left  2=Center  3=Right  4-7=laptop  8=Center  9=Right
-# Work: Left/Center/Right absent → 1-7 laptop, 8=P2725HE, 9=P2421.
-1 = ["Left", "Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
-2 = ["Center", "Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
-3 = ["Right", "Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+# Home, native mode: 1/2/3 + 8/9/10 live on the 49". Three windows in one
+# workspace tile as thirds (tiles layout + auto orientation), no virtual
+# screens involved. The Left/Center/Right virtuals stay first in the chains so
+# the BetterDisplay split experiment (home-49-split.sh) still routes if ever
+# revived; absent in daily use, the chains fall through to LC49G95T.
+# Work: 49" absent → 1-7 laptop, 8=P2725HE, 9=P2421.
+1 = ["Left", "LC49G95T", "Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+2 = ["Center", "LC49G95T", "Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
+3 = ["Right", "LC49G95T", "Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
 4 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
 5 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
 6 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
 7 = ["Built-in Retina Display", "DELL P2725HE", "DELL P2421"]
-8 = ["Center", "DELL P2725HE", 2]
-9 = ["Right", "DELL P2421", 3]
-# Parking lot: the physical 49" stays connected as the PIP canvas, so aerospace
-# must keep >=1 workspace on it. Pin 10 there deliberately; nothing binds to 10,
-# so no window can end up buried behind the PIP overlays.
+8 = ["Center", "LC49G95T", "DELL P2725HE", 2]
+9 = ["Right", "LC49G95T", "DELL P2421", 3]
+# Spare workspace on the 49"; doubled as the PIP parking lot during the
+# BetterDisplay split experiment.
 10 = ["LC49G95T", "Built-in Retina Display"]
 
 # First match wins. Float login dialogs BEFORE app→workspace rules.
