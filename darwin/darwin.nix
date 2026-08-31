@@ -181,6 +181,7 @@
       "fd"   # Better find
       "dust" # Better du
       "bottom" # Better top/htop
+      "displayplacer" # scripted display arrangement (.config/aerospace/home-49-split.sh)
       "difftastic" # Better diff
       "hyperfine" # Benchmarking tool
       "openfortivpn" # SSL-VPN client used by vpn-connect/vpn-disconnect (deps: openssl@3, ca-certificates)
@@ -196,9 +197,9 @@
       "1password"
       # Removing aerospace from casks since we're installing manually
       "bartender"
+      "betterdisplay"
       "fantastical"
       "firefox"
-      "hammerspoon"
       "joplin"
       "karabiner-elements"
       "keycastr"
@@ -266,40 +267,24 @@
       CustomUserPreferences = {
         "com.apple.TCC" = {
           "kTCCServiceAccessibility" = {
-            "org.hammerspoon.Hammerspoon" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
             };
           };
           "kTCCServiceSystemPolicyAllFiles" = {
-            "org.hammerspoon.Hammerspoon" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
             };
           };
           "kTCCServiceAppleEvents" = {
-            "org.hammerspoon.Hammerspoon" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
             };
           };
           "kTCCServiceScreenCapture" = {
-            "org.hammerspoon.Hammerspoon" = {
-              allowed = 1;
-              prompt-count = 1;
-            };
             "com.warp.Warp" = {
               allowed = 1;
               prompt-count = 1;
