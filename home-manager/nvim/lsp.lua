@@ -65,12 +65,11 @@ vim.lsp.config('lua_ls', {
         version = 'LuaJIT',
         path = vim.split(package.path, ';'),
       },
-      diagnostics = { globals = {'vim', 'hs'}, },
+      diagnostics = { globals = {'vim'}, },
       workspace = {
         library = {
           [vim.fn.expand('$VIMRUNTIME/lua')] = true,
           [vim.fn.expand('$VIMRUNTIME/lua/vim/lsp')] = true,
-          [vim.fn.expand('/Applications/Hammerspoon.app/Contents/Resources/extensions/hs/')] = true
         },
       },
     },

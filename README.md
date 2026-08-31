@@ -9,7 +9,6 @@ Featuring:
 - Neovim
 - OSX
   - darwin-nix
-  - Hammerspoon
   - homebrew mas
   - aerospace
 

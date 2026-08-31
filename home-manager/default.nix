@@ -123,9 +123,18 @@
         export NIX_CONFIG="experimental-features = nix-command flakes"
       '';
 
+      # Hammerspoon was retired in f83fcaf (AeroSpace cutover). Drop leftover
+      # ~/.hammerspoon and the Homebrew cask so a switch never talks to `hs`.
       cleanupHammerspoon = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
-        echo "Cleaning up Hammerspoon symlinks..."
+        echo "Removing leftover Hammerspoon home dir..."
         rm -rf ${config.home.homeDirectory}/.hammerspoon
+        if [ -d /Applications/Hammerspoon.app ]; then
+          echo "Uninstalling leftover Hammerspoon.app..."
+          if command -v brew >/dev/null 2>&1; then
+            brew uninstall --cask hammerspoon --force >/dev/null 2>&1 || true
+          fi
+          rm -rf /Applications/Hammerspoon.app
+        fi
       '';
 
       linkAerospaceConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -140,28 +149,14 @@
     # Home Manager is pretty good at managing dotfiles. The primary way to manage
     # plain files is through 'home.file'.
     file = {
-      hammerspoon = lib.mkIf pkgs.stdenvNoCC.isDarwin {
-        source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/hammerspoon";
-        target = ".hammerspoon";
-        recursive = true;
-        onChange = ''
-          # A switch must never block on Hammerspoon: `hs` waits forever when the app is
-          # not running, and even when it is, the activation runs under root's `sudo -u`
-          # bootstrap namespace and cannot reach the GUI session's IPC port (hung a switch
-          # for 20+ min on 2026-08-25). Skip unless the app is up, and bound the wait.
-          if command -v hs >/dev/null 2>&1 && /usr/bin/pgrep -xq Hammerspoon; then
-            timeout 10 /usr/bin/env hs -c "hs.reload()" || true
-          fi
-        '';
-      };
       yabaisetup = lib.mkIf pkgs.stdenvNoCC.isDarwin {
         source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/yabai";
         target = ".config/yabai";
         recursive = true;
       };
       # Warp launch config for the Eeze SRE workspace: 13 tabs, 10 of them auto-resuming a
-      # named Claude session via `ccr` (claude-launcher.nix). Out-of-store like hammerspoon
-      # and yabai above: Warp's UI edits launch configs in place, which a read-only store
+      # named Claude session via `ccr` (claude-launcher.nix). Out-of-store like
+      # yabai above: Warp's UI edits launch configs in place, which a read-only store
       # symlink would break. Warp itself is a homebrew cask (darwin/darwin.nix).
       warpEezeSre = lib.mkIf pkgs.stdenvNoCC.isDarwin {
         source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dotnix/.config/warp/launch_configurations/Eeze-sre.yaml";
