@@ -144,6 +144,19 @@
         ln -sf ${config.home.homeDirectory}/dotnix/.config/aerospace/aerospace.toml ${config.home.homeDirectory}/.config/aerospace/aerospace.toml
         echo "Symlink created."
       '';
+
+      # Whole-DIR symlink (not per-file): Karabiner saves via atomic rename, which
+      # would replace a file-level symlink with a plain file and orphan the repo
+      # copy. Through a dir symlink the rename lands inside the repo. Its
+      # automatic_backups/ noise is gitignored.
+      linkKarabinerConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        KARA=${config.home.homeDirectory}/.config/karabiner
+        if [ ! -L "$KARA" ]; then
+          echo "Linking ~/.config/karabiner -> dotnix..."
+          rm -rf "$KARA"
+          ln -sfn ${config.home.homeDirectory}/dotnix/.config/karabiner "$KARA"
+        fi
+      '';
     };
 
     # Home Manager is pretty good at managing dotfiles. The primary way to manage

@@ -32,3 +32,4 @@ devenv.local.nix
 
 # oh-my-claudecode plugin state (session-local)
 .omc/
+.config/karabiner/automatic_backups/
