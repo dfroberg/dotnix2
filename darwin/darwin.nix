@@ -381,6 +381,11 @@ auth       sufficient     pam_tid.so
         %admin ALL=(root) NOPASSWD: /usr/bin/killall -HUP mDNSResponder
         %admin ALL=(root) NOPASSWD: /usr/bin/pkill -f openfortivpn
         %admin ALL=(root) NOPASSWD: /usr/bin/pkill -f pppd
+        # Stale-route cleanup for the same helpers (vpn.nix). Wildcard rather than a
+        # pinned IP because the endpoint address is resolved at dial time and not
+        # guaranteed static; delete-only and -host-only keeps it to removing single
+        # host routes, which is the narrowest form that still covers both profiles.
+        %admin ALL=(root) NOPASSWD: /sbin/route -n delete -host *
 
       '';
     };

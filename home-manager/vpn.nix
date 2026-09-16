@@ -22,6 +22,10 @@ let
   desiredFile = "${homeDir}/.vpn-desired";
   attemptFile = "${homeDir}/.vpn-attempts";
   nextFile = "${homeDir}/.vpn-next-attempt";
+  # IP of the VPN server for the CURRENT session, written by vpn-connect at dial time.
+  # Teardown deletes the host route openfortivpn added for it -- by saved IP, never by
+  # resolving: mid-teardown DNS may still point at the dead VPN resolvers.
+  serverIpFile = "${homeDir}/.vpn-server-ip";
   watchdogLog = "${homeDir}/.vpn-watchdog.log";
 
   vpnDisconnect = pkgs.writeShellScriptBin "vpn-disconnect" ''
@@ -41,6 +45,16 @@ let
     sudo /usr/bin/pkill -f pppd 2>/dev/null | tr '\r' '\n' || true
 
     rm -f "${pidFile}"
+
+    # Remove the host route openfortivpn installed to reach the VPN server via the
+    # then-current gateway. It survives an unclean death (sleep, Wi-Fi switch, crash),
+    # and on any other LAN it then blackholes the next dial -- a stale host route to
+    # the endpoint beats the new default route, so packets go to an unreachable
+    # gateway and vpn-connect times out waiting for the SAML URL.
+    if [[ -f "${serverIpFile}" ]]; then
+      sudo /sbin/route -n delete -host "$(cat "${serverIpFile}")" >/dev/null 2>&1 || true
+      rm -f "${serverIpFile}"
+    fi
 
     # Restore DNS — always attempt, even if DNS_FILE is missing.
     # A timed-out VPN leaves DNS pointing at unreachable VPN servers,
@@ -112,6 +126,18 @@ let
       CURRENT=$(cat "${nameFile}" 2>/dev/null || echo "unknown")
       echo "Cleaning up previous VPN session ($CURRENT)..."
       ${vpnDisconnect}/bin/vpn-disconnect --internal
+    fi
+
+    # Belt and braces for the stale-route case the preflight above misses: after an
+    # unclean death the pid/dns state files can be gone and openfortivpn dead, yet the
+    # host route it added is still there (observed 2026-09-16: 80.85.106.18 via a
+    # previous LAN's 192.168.4.1, blackholing every redial). Resolve HERE, while DNS
+    # is still the LAN's, and record the IP so teardown never needs to resolve.
+    HOST_PART="''${VPN_HOST%%:*}"
+    VPN_IP=$(/usr/bin/dig +short "$HOST_PART" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+    if [[ -n "$VPN_IP" ]]; then
+      sudo /sbin/route -n delete -host "$VPN_IP" >/dev/null 2>&1 || true
+      echo "$VPN_IP" > "${serverIpFile}"
     fi
 
     # Capture original DNS
