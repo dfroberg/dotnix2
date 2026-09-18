@@ -81,6 +81,12 @@ let
     # silently loses work. Keep in sync with FILES/DIRS in bin/claude-sync.
     case "$INPUT" in
       *"/.claude/projects/"*"/memory/"*) ;;
+      # Work profile (ccw, CLAUDE_CONFIG_DIR=~/.claude-work): projects/ is a symlink to
+      # ~/.claude/projects (claude-launcher.nix), so the DATA lands in canon and syncs --
+      # but hook payloads carry the profile's path, which the line above never matches.
+      # Without this, work-session memories ride solely on SessionEnd, the exact
+      # guarantee this module exists to stop depending on.
+      *"/.claude-work/projects/"*"/memory/"*) ;;
       *"/.claude/CLAUDE.md"*)            ;;
       *"/.claude/settings.json"*)        ;;
       *"/.claude/mcp_settings.json"*)    ;;

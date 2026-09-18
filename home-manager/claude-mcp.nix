@@ -77,6 +77,16 @@ let
     reg tokensave  /opt/homebrew/bin/tokensave serve
     reg gitnexus   npx -y gitnexus mcp
 
+    # Same three for the WORK profile (ccw, claude-launcher.nix). User-scope MCP
+    # registrations live in $CLAUDE_CONFIG_DIR/.claude.json, which is per-profile and
+    # deliberately not symlinked (it also carries account state), so register again
+    # with the env var set — `claude mcp get/add` both honor it.
+    export CLAUDE_CONFIG_DIR="$HOME/.claude-work"
+    reg jcodemunch uvx jcodemunch-mcp
+    reg tokensave  /opt/homebrew/bin/tokensave serve
+    reg gitnexus   npx -y gitnexus mcp
+    unset CLAUDE_CONFIG_DIR
+
     if mcp_has jcodemunch && mcp_has tokensave && mcp_has gitnexus; then
       log "code-intel MCP stack ready"; exit 0
     else
@@ -90,7 +100,7 @@ in
   # Run once per machine (sentinel-guarded). Retries next switch if it failed (e.g.
   # offline / tap not trusted). Bump the .vN suffix to force a re-run after edits.
   home.activation.setupCodeIntelMcp = lib.hm.dag.entryAfter [ "installPackages" ] ''
-    SENTINEL="${config.home.homeDirectory}/.claude/.code-intel-setup.v4"
+    SENTINEL="${config.home.homeDirectory}/.claude/.code-intel-setup.v5"
     if [ ! -f "$SENTINEL" ]; then
       echo "Setting up code-intel MCP stack (jcodemunch/tokensave/gitnexus)…"
       # Runs as the user (verified: the script logs user/HOME/claude on every run),
