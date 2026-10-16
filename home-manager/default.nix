@@ -14,6 +14,7 @@
     ./claude-mcp.nix
     ./claude-sync-hooks.nix
     ./claude-launcher.nix
+    ./ssh.nix
   ];
 
   home = {
@@ -98,6 +99,13 @@
           mkdir -p ${config.home.homeDirectory}/.config/git-crypt
           ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/claude-sync-key.age} > ${config.home.homeDirectory}/.config/git-crypt/claude-sync.key
           chmod 600 ${config.home.homeDirectory}/.config/git-crypt/claude-sync.key
+
+          # eeze GitLab SSH key (git-ssh.eeze.com in .config/.ssh/config)
+          mkdir -p ${config.home.homeDirectory}/.ssh
+          chmod 700 ${config.home.homeDirectory}/.ssh
+          ${pkgs.sops}/bin/sops -d ${toString ./../.config/secrets/ssh-eeze.age} > ${config.home.homeDirectory}/.ssh/id_ed25519_eeze
+          chmod 600 ${config.home.homeDirectory}/.ssh/id_ed25519_eeze
+          ${pkgs.openssh}/bin/ssh-keygen -y -f ${config.home.homeDirectory}/.ssh/id_ed25519_eeze > ${config.home.homeDirectory}/.ssh/id_ed25519_eeze.pub
 
           # Decrypt and setup GPG files
           echo "Setting up GPG configuration..."
